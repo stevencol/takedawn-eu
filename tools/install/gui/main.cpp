@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
 
   QCommandLineParser parser;
   parser.setApplicationDescription(
-      "Takedawn's setup window: puts the game's data in place from your own Burnout 3: Takedown (NTSC-U) disc "
+      "Takedawn's setup window: puts the game's data in place from your own Burnout 3: Takedown (" TAKEDAWN_DISC_SHORT ") disc "
       "image or folder, then starts the game. The game opens it when its data is missing.");
   parser.addHelpOption();
   parser.addVersionOption();

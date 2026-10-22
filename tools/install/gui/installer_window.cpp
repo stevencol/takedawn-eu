@@ -237,7 +237,7 @@ InstallerWindow::InstallerWindow(const LaunchConfig& config, QWidget* parent) : 
   root->setSpacing(0);
   header_ = new HeaderBand;
   header_->SetTitle(tr("Takedawn"));
-  header_->SetSubtitle(tr("Setup. The game's data comes from your own Burnout 3: Takedown (NTSC-U) disc."));
+  header_->SetSubtitle(tr("Setup. The game's data comes from your own Burnout 3: Takedown (%1) disc.").arg(TAKEDAWN_DISC_SHORT));
   header_->SetIcon(AppIconPixmap(72, devicePixelRatioF()));
   root->addWidget(header_);
 
@@ -651,9 +651,10 @@ void InstallerWindow::ShowAbout() {
            "<p><b>A fan project.</b> It is not made, endorsed or supported by Electronic Arts or Criterion Games and "
            "has no connection with them. Burnout is a trademark of its owners.</p>"
            "<p><b>Bring your own disc.</b> Takedawn is the program only. The game's data is not part of it and is not "
-           "downloaded: this window copies it from your own North America (NTSC-U) retail disc, as an image (.iso) or "
+           "downloaded: this window copies it from your own %2 disc, as an image (.iso) or "
            "as extracted files, checks every file, and keeps it on this computer. It needs about 3 GB free.</p>")
-            .arg((version_line_.isEmpty() ? tr("Takedawn %1").arg(TAKEDAWN_SETUP_VERSION) : version_line_).toHtmlEscaped()));
+            .arg((version_line_.isEmpty() ? tr("Takedawn %1").arg(TAKEDAWN_SETUP_VERSION) : version_line_).toHtmlEscaped(),
+                 QStringLiteral(TAKEDAWN_DISC_NAME).toHtmlEscaped()));
     text->setWordWrap(true);
     text->setTextFormat(Qt::RichText);
     layout->addWidget(text);
@@ -1208,7 +1209,7 @@ void InstallerWindow::CloseBrowser() {
 
 void InstallerWindow::NativeImageDialog() {
   const QString start = browser_->CurrentFolder().isEmpty() ? QDir::homePath() : browser_->CurrentFolder();
-  const QString path = QFileDialog::getOpenFileName(this, tr("Choose your Burnout 3: Takedown (NTSC-U) disc image"), start,
+  const QString path = QFileDialog::getOpenFileName(this, tr("Choose your Burnout 3: Takedown (%1) disc image").arg(TAKEDAWN_DISC_SHORT), start,
                                                     tr("Disc images (*.iso *.xiso);;All files (*)"));
   if (path.isEmpty()) return;
   CloseBrowser();
@@ -1286,7 +1287,7 @@ void InstallerWindow::BrowseImage() {
     return;
   }
   const QString start = disc_path_.isEmpty() ? QDir::homePath() : QFileInfo(disc_path_).absolutePath();
-  const QString path = QFileDialog::getOpenFileName(this, tr("Choose your Burnout 3: Takedown (NTSC-U) disc image"), start,
+  const QString path = QFileDialog::getOpenFileName(this, tr("Choose your Burnout 3: Takedown (%1) disc image").arg(TAKEDAWN_DISC_SHORT), start,
                                                     tr("Disc images (*.iso *.xiso);;All files (*)"));
   if (!path.isEmpty()) SetDisc(path);
 }
@@ -1406,8 +1407,8 @@ void InstallerWindow::SetDiscState(DiscState state, const QString& headline, con
         html = Span(theme::kLit, tr("No disc is needed right now."), true) + "<br>" +
                Span(theme::kDim, tr("If the check finds a damaged file, your disc image or folder repairs it."));
       } else {
-        html = Span(theme::kLit, couch_ ? tr("Choose your Burnout 3: Takedown (NTSC-U) disc")
-                                        : tr("Drop your Burnout 3: Takedown (NTSC-U) disc image here"), true) + "<br>" +
+        html = Span(theme::kLit, couch_ ? tr("Choose your Burnout 3: Takedown (%1) disc").arg(TAKEDAWN_DISC_SHORT)
+                                        : tr("Drop your Burnout 3: Takedown (%1) disc image here").arg(TAKEDAWN_DISC_SHORT), true) + "<br>" +
                Span(theme::kDim, tr("The .iso of your own Xbox disc, or the folder its files were extracted to. "
                                     "It is only read."));
       }

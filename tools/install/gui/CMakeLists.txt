@@ -57,6 +57,38 @@ add_library(takedawn_setup_ui STATIC
 )
 target_include_directories(takedawn_setup_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(takedawn_setup_ui PUBLIC TAKEDAWN_SETUP_VERSION="${TAKEDAWN_VERSION}")
+
+# The disc the game beside it was built for, the way cmake/release_info.cmake
+# finds it: gen/region_map.h names the release, tools/install/supported.json
+# its name. "Europe (PAL) retail" and "PAL" for the texts; NTSC-U without one.
+set(_root "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
+set(_build "ntsc-u-retail")
+if(EXISTS "${_root}/src/game/recomp/gen/region_map.h")
+    file(STRINGS "${_root}/src/game/recomp/gen/region_map.h" _b REGEX "^#define BO3_BUILD_ID \"[a-z0-9-]+\"$")
+    if(_b MATCHES "\"([a-z0-9-]+)\"")
+        set(_build "${CMAKE_MATCH_1}")
+    endif()
+endif()
+set(TAKEDAWN_DISC "${TAKEDAWN_DISC}" CACHE STRING "The disc's name in the texts (default: from the generated code)")
+if(NOT TAKEDAWN_DISC)
+    file(READ "${_root}/tools/install/supported.json" _supported)
+    string(JSON _n LENGTH "${_supported}" builds)
+    math(EXPR _n "${_n} - 1")
+    foreach(_i RANGE ${_n})
+        string(JSON _id GET "${_supported}" builds ${_i} id)
+        if(_id STREQUAL _build)
+            string(JSON _name GET "${_supported}" builds ${_i} name)
+            string(REGEX REPLACE "^[^,]*, " "" _disc "${_name}")
+        endif()
+    endforeach()
+else()
+    set(_disc "${TAKEDAWN_DISC}")
+endif()
+string(REGEX MATCH "\\(([^)]+)\\)" _m "${_disc}")
+set(_disc_short "${CMAKE_MATCH_1}")
+message(STATUS "takedawn-setup: for the ${_disc} disc (${_disc_short})")
+target_compile_definitions(takedawn_setup_ui PUBLIC TAKEDAWN_DISC_NAME="${_disc}"
+                                                    TAKEDAWN_DISC_SHORT="${_disc_short}")
 target_link_libraries(takedawn_setup_ui PUBLIC Qt6::Widgets)
 
 # The controller (pad_input.h): SDL's game controller API, the SDL the game

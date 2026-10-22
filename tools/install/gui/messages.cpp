@@ -78,7 +78,7 @@ Explained ExplainInstall(const QString& code, const InstallFacts& facts) {
   }
   if (code == "xbox360-disc") {
     return {T("This is an Xbox 360 disc."),
-            T("Takedawn runs the original Xbox game. Use the Burnout 3: Takedown (NTSC-U) disc for the original Xbox.")};
+            T("Takedawn runs the original Xbox game. Use the Burnout 3: Takedown (%1) disc for the original Xbox.").arg(TAKEDAWN_DISC_SHORT)};
   }
   if (code == "no-xbe") {
     return {T("There is no Xbox game here."),
@@ -87,12 +87,13 @@ Explained ExplainInstall(const QString& code, const InstallFacts& facts) {
   }
   if (code == "wrong-game") {
     return {T("This is the disc of another game."),
-            T("Takedawn needs the Burnout 3: Takedown (NTSC-U) disc for the original Xbox.")};
+            T("Takedawn needs the Burnout 3: Takedown (%1) disc for the original Xbox.").arg(TAKEDAWN_DISC_SHORT)};
   }
   if (code == "wrong-version") {
     return {T("This is Burnout 3: Takedown, but not the version Takedawn supports."),
-            T("Only the North America (NTSC-U) retail disc works. Discs of other regions (PAL, Japan) and patched or "
-              "modified copies hold different code and cannot be used.")};
+            T("This build works with the %1 disc only. Discs of other regions need the build made for them. Patched or "
+              "modified copies hold different code: softmods and loaders often keep the original beside it as "
+              "default.bak; put that one back as default.xbe and choose the folder again.").arg(TAKEDAWN_DISC_NAME)};
   }
   if (code == "truncated-image") {
     return {T("The disc image is incomplete."),
