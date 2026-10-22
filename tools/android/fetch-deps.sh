@@ -28,8 +28,12 @@
 set -euo pipefail
 
 PREFIX="${BO3_ANDROID_DEPS:-$HOME/.cache/bo3-android-deps}"
+command -v cygpath >/dev/null 2>&1 && PREFIX="$(cygpath -m "$PREFIX")"
 SDK="${ANDROID_HOME:-$HOME/android-sdk}"
+# A Windows path (C:\...) from the environment: the shell's form, for the globs.
+command -v cygpath >/dev/null 2>&1 && SDK="$(cygpath -u "$SDK")"
 NDK="${ANDROID_NDK_HOME:-$(ls -d "$SDK"/ndk/* 2>/dev/null | sort -V | tail -1)}"
+command -v cygpath >/dev/null 2>&1 && [ -n "$NDK" ] && NDK="$(cygpath -m "$NDK")"
 API="${ANDROID_API:-33}"
 ABI=arm64-v8a
 SDL2_VER=2.32.10
@@ -99,7 +103,12 @@ if [ ! -f adrenotools/lib/libadrenotools.a ]; then
   cp adrenotools-src/lib/linkernsbypass/LICENSE adrenotools/licenses/linkernsbypass-LICENSE
 fi
 
-if [ "${BO3_ANDROID_TURNIP:-1}" != 0 ] && [ ! -f turnip/libvulkan_freedreno.so ]; then
+# The Mesa build wants meson, bison and flex: on a Windows host (Git Bash)
+# only when asked for (BO3_ANDROID_TURNIP=mesa); the APK carries the prebuilt
+# driver below by default anyway.
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) WIN_HOST=1 ;; *) WIN_HOST=0 ;; esac
+if [ "${BO3_ANDROID_TURNIP:-1}" != 0 ] && [ ! -f turnip/libvulkan_freedreno.so ] \
+   && { [ "$WIN_HOST" = 0 ] || [ "${BO3_ANDROID_TURNIP:-1}" = mesa ]; }; then
   HOST_TAG="$(ls "$NDK/toolchains/llvm/prebuilt" | head -1)"
   BIN="$NDK/toolchains/llvm/prebuilt/$HOST_TAG/bin"
   [ -x venv/bin/meson ] || { python3 -m venv venv && venv/bin/pip -q install meson mako pyyaml packaging; }

@@ -49,11 +49,15 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/../.." && pwd)"
 SDK="${ANDROID_HOME:-$HOME/android-sdk}"
+# A Windows path (C:\...) from the environment: the shell's form, for the globs.
+command -v cygpath >/dev/null 2>&1 && SDK="$(cygpath -u "$SDK")"
 NDK="${ANDROID_NDK_HOME:-$(ls -d "$SDK"/ndk/* 2>/dev/null | sort -V | tail -1)}"
+command -v cygpath >/dev/null 2>&1 && [ -n "$NDK" ] && NDK="$(cygpath -m "$NDK")"
 API="${ANDROID_API:-33}"
 TARGET_API=34
 ABI=arm64-v8a
 D="${BO3_ANDROID_DEPS:-$HOME/.cache/bo3-android-deps}"
+command -v cygpath >/dev/null 2>&1 && D="$(cygpath -m "$D")"
 TK="${XBOXRECOMP_DIR:-}"
 if [ -z "$TK" ]; then
   for c in "$HERE/../xboxrecomp-android" "$HERE/../xboxrecomp"; do [ -d "$c" ] && TK="$c" && break; done
@@ -69,6 +73,12 @@ SYSROOT="$NDK/toolchains/llvm/prebuilt/$HOST_TAG/sysroot"
 BT="$(ls -d "$SDK"/build-tools/* | sort -V | tail -1)"
 PLATFORM="$(ls -d "$SDK"/platforms/android-* | sort -V | tail -1)"
 JAR="$PLATFORM/android.jar"
+# On a Windows host (Git Bash) the native tools want C:/... paths, d8 and
+# apksigner are .bat files, and there may be no zip.
+wp() { if command -v cygpath >/dev/null 2>&1; then cygpath -m "$1"; else printf '%s\n' "$1"; fi; }
+D8="$BT/d8"; [ -f "$D8" ] || D8="$BT/d8.bat"
+APKSIGNER="$BT/apksigner"; [ -f "$APKSIGNER" ] || APKSIGNER="$BT/apksigner.bat"
+JAR="$(wp "$JAR")"
 
 # A replacement GPU driver (docs/android.md, "The GPU driver"): libadrenotools
 # when fetch-deps.sh built it, and a Turnip driver, unless BO3_ANDROID_TURNIP=0:
@@ -80,15 +90,15 @@ ADRENO=()
 [ -f "$D/adrenotools/lib/libadrenotools.a" ] && ADRENO=(-DXBOXRECOMP_ANDROID_ADRENOTOOLS="$D/adrenotools")
 
 echo "== native (NDK $(basename "$NDK"), android-$API, $ABI)"
-cmake -S "$HERE" -B "$B" -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+cmake -S "$(wp "$HERE")" -B "$(wp "$B")" -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_TOOLCHAIN_FILE="$(wp "$NDK/build/cmake/android.toolchain.cmake")" \
   -DANDROID_ABI=$ABI -DANDROID_PLATFORM=android-$API -DANDROID_STL=c++_shared \
-  -DXBOXRECOMP_DIR="$TK" \
-  -DCMAKE_FIND_ROOT_PATH="$D/SDL2;$D/glslang" \
-  -DCMAKE_PREFIX_PATH="$D/SDL2;$D/glslang" \
-  -DVulkan_INCLUDE_DIR="$SYSROOT/usr/include" \
-  -DVulkan_LIBRARY="$SYSROOT/usr/lib/aarch64-linux-android/$API/libvulkan.so" \
-  -DBO3_BIN_DIR="$B/lib" \
+  -DXBOXRECOMP_DIR="$(wp "$TK")" \
+  -DCMAKE_FIND_ROOT_PATH="$(wp "$D/SDL2");$(wp "$D/glslang")" \
+  -DCMAKE_PREFIX_PATH="$(wp "$D/SDL2");$(wp "$D/glslang")" \
+  -DVulkan_INCLUDE_DIR="$(wp "$SYSROOT/usr/include")" \
+  -DVulkan_LIBRARY="$(wp "$SYSROOT/usr/lib/aarch64-linux-android/$API/libvulkan.so")" \
+  -DBO3_BIN_DIR="$(wp "$B/lib")" \
   ${ADRENO[@]+"${ADRENO[@]}"} \
   "$@"
 cmake --build "$B" --target burnout3 -j"$JOBS"
@@ -112,8 +122,12 @@ VCODE=$(( BASH_REMATCH[1] * 10000000 + BASH_REMATCH[2] * 100000 + BASH_REMATCH[3
 if [ -n "${BASH_REMATCH[4]}" ]; then
     VCODE=$(( VCODE - 900 ))
 fi
-MANIFEST_ID="$(sed -n 's/^# id //p' "$HERE/config/disc/ntsc-u-retail.manifest" | head -1)"
-[ -n "$MANIFEST_ID" ] || { echo "no id line in config/disc/ntsc-u-retail.manifest" >&2; exit 1; }
+# The id the native library was built with (cmake/release_info.cmake picks the
+# release's manifest): the installer writes it to its marker, and
+# StartActivity compares the two, so they must be the same.
+REL_H="$B/src/game/release/bo3_release.h"
+MANIFEST_ID="$(sed -n 's/^#define BO3_MANIFEST_ID "\([0-9a-f]*\)".*/\1/p' "$REL_H" 2>/dev/null | head -1)"
+[ -n "$MANIFEST_ID" ] || { echo "no BO3_MANIFEST_ID in $REL_H" >&2; exit 1; }
 echo "   Takedawn $VNAME, versionCode $VCODE, disc manifest $MANIFEST_ID"
 mkdir -p "$OUT/gen/io/github/xenophobentx/takedawn"
 cat > "$OUT/gen/io/github/xenophobentx/takedawn/BuildInfo.java" <<JAVA
@@ -166,12 +180,13 @@ echo "   $(ls "$AL" | wc -l | tr -d ' ') licence files in assets/licenses"
   --min-sdk-version "$API" --target-sdk-version "$TARGET_API" -A "$OUT/assets" "$OUT/res.zip"
 
 echo "== java (SDL's activity, the start and game activities)"
-find "$D/SDL2/java" "$HERE/android/java" "$OUT/gen" -name '*.java' > "$OUT/sources.txt"
+find "$D/SDL2/java" "$HERE/android/java" "$OUT/gen" -name '*.java' \
+  | while read -r f; do wp "$f"; done > "$OUT/sources.txt"
 javac -nowarn -Xlint:none -source 17 -target 17 -encoding UTF-8 \
-  -classpath "$JAR" -d "$OUT/classes" @"$OUT/sources.txt"
-find "$OUT/classes" -name '*.class' > "$OUT/classes.txt"
+  -classpath "$JAR" -d "$(wp "$OUT/classes")" @"$(wp "$OUT/sources.txt")"
+find "$OUT/classes" -name '*.class' | while read -r f; do wp "$f"; done > "$OUT/classes.txt"
 [ -s "$OUT/classes.txt" ] || { echo "javac produced nothing" >&2; exit 1; }
-"$BT/d8" --release --min-api "$API" --lib "$JAR" --output "$OUT/dex" @"$OUT/classes.txt"
+"$D8" --release --min-api "$API" --lib "$JAR" --output "$(wp "$OUT/dex")" @"$(wp "$OUT/classes.txt")"
 
 echo "== native libraries"
 cp "$B/lib/libmain.so" "$D/SDL2/lib/libSDL2.so" \
@@ -200,7 +215,20 @@ fi
 echo "== packing"
 cp "$OUT/base.apk" "$OUT/unaligned.apk"
 cp "$OUT/dex/classes.dex" "$OUT/pack/"
-(cd "$OUT/pack" && zip -q -r "$OUT/unaligned.apk" classes.dex lib)
+if command -v zip >/dev/null 2>&1; then
+  (cd "$OUT/pack" && zip -q -r "$OUT/unaligned.apk" classes.dex lib)
+else
+  PY=python3; command -v py >/dev/null 2>&1 && PY="py -3"
+  (cd "$OUT/pack" && $PY -c '
+import os, sys, zipfile
+with zipfile.ZipFile(sys.argv[1], "a", zipfile.ZIP_DEFLATED) as z:
+    for top in ("classes.dex", "lib"):
+        for dp, _, fs in os.walk(top) if os.path.isdir(top) else [("", None, [top])]:
+            for f in sorted(fs):
+                p = os.path.join(dp, f)
+                z.write(p, p.replace(os.sep, "/"))
+' "$(wp "$OUT/unaligned.apk")")
+fi
 "$BT/zipalign" -f 4 "$OUT/unaligned.apk" "$OUT/aligned.apk"
 
 if [ "${SIGN:-1}" = 0 ]; then
@@ -216,5 +244,6 @@ if [ ! -f "$KS" ]; then
     -alias bo3 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=burnout3 debug" >/dev/null
 fi
 APK="$HERE/out/takedawn-android-arm64.apk"
-"$BT/apksigner" sign --ks "$KS" --ks-pass pass:android --key-pass pass:android --out "$APK" "$OUT/aligned.apk"
+"$APKSIGNER" sign --ks "$(wp "$KS")" --ks-pass pass:android --key-pass pass:android \
+  --out "$(wp "$APK")" "$(wp "$OUT/aligned.apk")"
 ls -l "$APK"

@@ -18,6 +18,7 @@
  *
  * Nothing here runs unless the mixer is on (audio.mixer, RECOMP_AUDIO_MIXER).
  */
+#include "guest_addr.h"
 #include "mixer.h"
 
 #include <ctype.h>
@@ -314,17 +315,17 @@ static int all_zero(const uint8_t *p)
 
 /* The title's code that turns a stream voice on (return addresses of the
  * NTSC-U build, docs/mixer.md). */
-#define RA_MUSIC   0x00152FB2u          /* the music manager: EA GAMES TRAX */
-#define RA_CUSTOM  0x00155AE3u          /* its custom-soundtrack player (sub_00155900): the
+#define RA_MUSIC   GA(0x00152FB2u)          /* the music manager: EA GAMES TRAX */
+#define RA_CUSTOM  GA(0x00155AE3u)          /* its custom-soundtrack player (sub_00155900): the
                                          * user's own music (BO-108) starts its stream here */
 /* The music manager's code: a stream started from anywhere in it that is
  * not the DJ's path is music (a call site this table does not name yet). */
-#define MUSIC_LO   0x00152E00u
-#define MUSIC_HI   0x00156000u
-#define RA_DJ      0x001546BAu          /* its speech path: the DJ */
-#define RA_FILM_A  0x0001507Du          /* the film player */
-#define RA_FILM_B  0x0008731Bu
-#define RA_RWS     0x0020BD49u          /* RenderWare's stream player */
+#define MUSIC_LO   GA(0x00152E00u)
+#define MUSIC_HI   GA(0x00156000u)
+#define RA_DJ      GA(0x001546BAu)          /* its speech path: the DJ */
+#define RA_FILM_A  GA(0x0001507Du)          /* the film player */
+#define RA_FILM_B  GA(0x0008731Bu)
+#define RA_RWS     GA(0x0020BD49u)          /* RenderWare's stream player */
 
 int bo3_mixer_classify(const apu_bus_voice *v)
 {

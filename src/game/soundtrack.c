@@ -22,6 +22,7 @@
  * xst_stream; everything after it (the stream, its volume and mix bins,
  * pause, skip, shuffle) is the title's own.
  */
+#include "guest_addr.h"
 #include "soundtrack.h"
 #include "soundtrack_start.h"
 
@@ -75,7 +76,7 @@ static volatile int s_on;
  * The number is only changed while the title is on EA GAMES TRAX: a chosen
  * soundtrack is an index into the list that is about to change.
  */
-#define MUSIC_MANAGER   0x004115E8u
+#define MUSIC_MANAGER   GA(0x004115E8u)
 #define MGR_COUNT       (MUSIC_MANAGER + 0x0C0)
 #define MGR_SOURCES     (MUSIC_MANAGER + 0x558)
 #define MGR_ON_EA_TRAX  (MUSIC_MANAGER + 0x538)

@@ -20,6 +20,19 @@
   <a href="#reporting-a-bug">Report a bug</a>
 </p>
 
+> [!NOTE]
+> **takedawn-eu** is a modified copy of the original
+> [Takedawn](https://github.com/xenophobentx/takedawn) by xenophobentx, changed
+> so that it also runs the **European (PAL) retail disc** of *Burnout 3:
+> Takedown*, not only the North American one. The game's code is translated
+> from the PAL `default.xbe`, and the addresses the port uses are mapped from
+> the US build to the PAL one (`config/region/pal-retail.json`,
+> [docs/regions.md](docs/regions.md)). Everything else is the original
+> project's work; report problems of the PAL build here, not upstream.
+>
+> *Copia modificada del Takedawn original para que lea la versión europea
+> (PAL) del disco. Todo lo demás es trabajo del proyecto original.*
+
 > [!IMPORTANT]
 > Takedawn is an unofficial, non-commercial fan project. It is not affiliated
 > with, endorsed by or sponsored by Electronic Arts, Criterion Games or

@@ -27,7 +27,7 @@ import java.util.Map;
  * The first start: the game's data from the player's own disc image.
  *
  * The app holds the program and none of the game's files. This page asks for
- * an image of the player's Burnout 3: Takedown disc (North America, NTSC-U)
+ * an image of the player's Burnout 3: Takedown disc (the release it was built for)
  * with the system's file picker, which needs no storage permission, and hands
  * the open file to the installer in the native library (the toolkit's
  * disc_install.c through install.c): every file is checked against the
@@ -59,6 +59,8 @@ public class SetupActivity extends Activity {
     private Button pick, pickTree, cancel, start, driver;
     private volatile boolean running;
     private String root;
+    /** The disc this build wants, from the native side; for the static advice texts. */
+    private static String WANT = "the disc it was built for";
     private String[] about = { "Burnout 3: Takedown", "North America (NTSC-U) retail", "716",
             "2476107072", "3000000000", "" };
 
@@ -113,7 +115,7 @@ public class SetupActivity extends Activity {
         bar.setVisibility(View.GONE);
         box.addView(bar);
         detail = text("", 13, 0xFF909090);
-        pick = button("Choose your Burnout 3: Takedown (NTSC-U) disc image", new View.OnClickListener() {
+        pick = button("Choose your Burnout 3: Takedown disc image", new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 i.addCategory(Intent.CATEGORY_OPENABLE);
@@ -176,6 +178,7 @@ public class SetupActivity extends Activity {
             System.loadLibrary("SDL2");
             System.loadLibrary("main");
             about = nativeAbout().split("\n", -1);
+            WANT = about[1];
             st = nativeState(root);
         } catch (Throwable e) {
             Log.e(GameActivity.TAG, "setup: " + e);
@@ -314,8 +317,15 @@ public class SetupActivity extends Activity {
         case "wrong-game":
             return "Choose the image of Burnout 3: Takedown.";
         case "wrong-version":
-            return "This program is made for the North American (NTSC-U) retail disc only."
-                    + " The European and Japanese discs and the demo are different programs.";
+            return "The default.xbe on this disc is not the exact file this build needs ("
+                    + WANT + "): every byte of it is checked.\n\n"
+                    + "Most often it is a modified copy. Softmods, hard-disk loaders and"
+                    + " trainers patch a few bytes of default.xbe and keep the original beside"
+                    + " it, as default.bak or default.xbe.bak. If the folder has one: move the"
+                    + " patched default.xbe out of the folder, rename default.bak to"
+                    + " default.xbe, and choose the folder again.\n\n"
+                    + "If it is the disc of another region or the demo, it needs the build"
+                    + " made for that disc; this one is for " + WANT + ".";
         case "truncated-image":
         case "damaged-source":
             return "The image is incomplete or not a clean copy of the disc. Make it again,"
@@ -380,7 +390,12 @@ public class SetupActivity extends Activity {
                                     + about[2] + " files).");
                         } else {
                             show(true, false, false);
-                            status.setText((r.length > 1 ? r[1] : r[0]) + "\n\n" + advice(r[0]));
+                            String said = r.length > 1 ? r[1] : r[0];
+                            // The installer's sentence for a wrong executable reads as if
+                            // the region were refused; say first what is usually the cause.
+                            status.setText("wrong-version".equals(r[0])
+                                    ? advice(r[0]) + "\n\nDetails: " + said
+                                    : said + "\n\n" + advice(r[0]));
                             pick.requestFocus();
                         }
                     }

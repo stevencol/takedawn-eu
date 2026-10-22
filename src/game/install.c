@@ -58,7 +58,7 @@ static const xr_manifest_file k_files[] = {
 static const xr_manifest k_manifest = {
     BO3_MANIFEST_ID,
     "Burnout 3: Takedown",
-    "North America (NTSC-U) retail",
+    BO3_MANIFEST_NAME,
     BO3_MANIFEST_TITLE_ID,
     "default.xbe",
     k_files,

@@ -49,21 +49,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "guest_addr.h"
 #include "controls.h"
 #include "platform/recomp_env.h"
 #include "platform/recomp_patch.h"
 
 extern ptrdiff_t g_xbox_mem_offset;
 
-#define SB_HUD          0x0054F900u   /* the HUD object */
-#define SB_HUD_ON       0x004D61D3u   /* sub_000536C0 draws the HUD scenes */
-#define SB_PLATE_CB     0x00048430u   /* the plate's callback (POS, LAP too) */
-#define SB_TEXT_CB      0x000F6DC0u   /* the board's texts (POS, LAP too) */
+#define SB_HUD          GA(0x0054F900u)   /* the HUD object */
+#define SB_HUD_ON       GA(0x004D61D3u)   /* sub_000536C0 draws the HUD scenes */
+#define SB_PLATE_CB     GA(0x00048430u)   /* the plate's callback (POS, LAP too) */
+#define SB_TEXT_CB      GA(0x000F6DC0u)   /* the board's texts (POS, LAP too) */
 #define SB_STEP         (1.0f / 6.0f + 0.001f)  /* the title's own fade step */
 
 /* Per player: the score board component (sub_00056DB0's esi), its frame
  * at + 8. */
-static const uint32_t k_board[2] = { 0x003FDC00u, 0x003FED50u };
+static const uint32_t k_board[2] = { GA(0x003FDC00u), GA(0x003FED50u) };
 
 enum { SB_ORIGINAL, SB_SMOOTH };
 

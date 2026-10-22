@@ -92,6 +92,7 @@
  * Not blended: what is not on a frame (particles, skid marks, the
  * deformed car body's vertices), which moves once a step.
  */
+#include "guest_addr.h"
 #include "hirefresh.h"
 #include "hraudit.h"
 
@@ -112,17 +113,17 @@
 #include "platform/host_time.h"
 
 #define STEP_S       (1.0 / 60.0)
-#define TIMER        0x4D5338u     /* the stepper's timer object */
-#define FRAME_STEPS  0x4D53ACu     /* steps this frame's Update runs */
-#define HALF_ASKED   0x4D538Du     /* the half rate asked for */
-#define HALF_RATE    0x4D538Eu     /* the half rate in force */
-#define PLAYERS      0x73A1C0u     /* players at once: 2 in split screen */
-#define STAGE        0x4D5370u     /* the stage; its mode object at + 0x1B8, 0 in the front end */
-#define STEP_COUNT   0x4A1EB4u     /* global step counter */
-#define GAME_STATE   0x4D53B4u     /* the game object's state, 5 running */
-#define DIRTY_HEAD   0x75935Cu     /* RenderWare's dirty frame list */
-#define RACERS       0x64B38Cu     /* the racer table, 0x30 a racer */
-#define RACERS_N     0x73A19Cu
+#define TIMER        GA(0x4D5338u)     /* the stepper's timer object */
+#define FRAME_STEPS  GA(0x4D53ACu)     /* steps this frame's Update runs */
+#define HALF_ASKED   GA(0x4D538Du)     /* the half rate asked for */
+#define HALF_RATE    GA(0x4D538Eu)     /* the half rate in force */
+#define PLAYERS      GA(0x73A1C0u)     /* players at once: 2 in split screen */
+#define STAGE        GA(0x4D5370u)     /* the stage; its mode object at + 0x1B8, 0 in the front end */
+#define STEP_COUNT   GA(0x4A1EB4u)     /* global step counter */
+#define GAME_STATE   GA(0x4D53B4u)     /* the game object's state, 5 running */
+#define DIRTY_HEAD   GA(0x75935Cu)     /* RenderWare's dirty frame list */
+#define RACERS       GA(0x64B38Cu)     /* the racer table, 0x30 a racer */
+#define RACERS_N     GA(0x73A19Cu)
 #define FRAME_LTM    0x50u
 #define FRAME_CHILD  0x98u
 #define FRAME_NEXT   0x9Cu
@@ -539,8 +540,8 @@ static void dbg_truth(void)
 {
     static uint32_t last = ~0u;
     FILE *f = dbg_file();
-    uint32_t cam = MEM32(0x4D6200u + 0x58u), frame, step = MEM32(STEP_COUNT);
-    const float *c = (const float *)(uintptr_t)XBOX_PTR(0x0073A1D0u + 0x10u), *m;
+    uint32_t cam = MEM32(GA(0x4D6200u) + 0x58u), frame, step = MEM32(STEP_COUNT);
+    const float *c = (const float *)(uintptr_t)XBOX_PTR(GA(0x0073A1D0u) + 0x10u), *m;
     if (!f || step == last || MEM32(GAME_STATE) != 5)
         return;
     last = step;
@@ -559,9 +560,9 @@ static void dbg_truth(void)
  * sub_00018650). At 60 an Update is a step. Here: an Update with no step
  * leaves both as they were (nothing else touched them in such a picture,
  * BO-275), one with n steps advances them n times. */
-#define GAME_RNG     0x4D1FD8u     /* game + 0x2AE38: x, then y */
-#define PLAYED_PTR   0x3C838Cu     /* + 0x18: the profile's time played */
-#define PLAYED_DT    0x4AE1FCu     /* game + 0x705C: what it gains an Update */
+#define GAME_RNG     GA(0x4D1FD8u)     /* game + 0x2AE38: x, then y */
+#define PLAYED_PTR   GA(0x3C838Cu)     /* + 0x18: the profile's time played */
+#define PLAYED_DT    GA(0x4AE1FCu)     /* game + 0x705C: what it gains an Update */
 static struct { uint32_t x, y, played_at; float played; int have; } s_pu;
 
 static uint32_t played_at(void)
@@ -1028,7 +1029,7 @@ static int mat_affine_inv(const float *m, float *o)
  * (BO-241). So the view matrix follows its camera's blend: V' = B^-1 M V
  * (M the camera's true LTM, B its blend: the view window part, M V, is
  * kept), put back with the blends. */
-#define VIEW_PTR     0x4D6520u
+#define VIEW_PTR     GA(0x4D6520u)
 #define VIEW_CAMERA  0x58u
 
 static void blend_view(void)
@@ -1102,7 +1103,7 @@ static int view_at_step(void)
  * (in more than a tenth of them) or frames were skipped (above). */
 static void diag_swap(void)
 {
-    uint32_t cam = MEM32(0x4D6200u + VIEW_CAMERA), frame;
+    uint32_t cam = MEM32(GA(0x4D6200u) + VIEW_CAMERA), frame;
     double now = host_s();
     rec_t *r;
 
@@ -1182,7 +1183,7 @@ static void poke(uint32_t step)
     if (at < 0 || s_swaps + 1u < (uint32_t)at)
         return;
     at = -1;
-    cam = MEM32(0x4D6200u + 0x58u);
+    cam = MEM32(GA(0x4D6200u) + 0x58u);
     if (cam < 0x10000u || cam >= 0x08000000u || (frame = MEM32(cam + 4u)) < 0x10000u || frame >= 0x08000000u)
         return;
     m = ltm(frame);
@@ -1297,7 +1298,7 @@ static void trace_car(uint32_t mat, const float *m)
     FILE *f = trace_file();
     double now;
 
-    if (!f || mat != 0x0073A1D0u + 0x10u)
+    if (!f || mat != GA(0x0073A1D0u) + 0x10u)
         return;
     now = host_s();
     if (last_sw == s_swaps && last_flip_step == MEM32(STEP_COUNT))
@@ -1343,7 +1344,7 @@ static int owner_of(uint32_t mat)
     uint32_t n = MEM32(RACERS_N), i, cam;
     rec_t *r;
 
-    if (mat == 0x0073A1D0u + 0x10u || mat == 0x0073A1D0u + 0x27E0u + 0x10u)
+    if (mat == GA(0x0073A1D0u) + 0x10u || mat == GA(0x0073A1D0u) + 0x27E0u + 0x10u)
         return OWN_CAR;
     if (n > 8)
         n = 8;
@@ -1352,9 +1353,9 @@ static int owner_of(uint32_t mat)
         if (obj >= 0x10000u && obj < 0x08000000u && MEM32(obj + 0x204u) == mat)
             return OWN_RIVAL;
     }
-    if (mat == 0x4D6200u)
+    if (mat == GA(0x4D6200u))
         return OWN_VIEW;
-    cam = MEM32(0x4D6200u + 0x58u);
+    cam = MEM32(GA(0x4D6200u) + 0x58u);
     if (cam >= 0x10000u && cam < 0x08000000u && MEM32(cam + 4u) + FRAME_LTM == mat)
         return OWN_CAMERA;
     r = rec_find(mat - FRAME_LTM);
@@ -1414,7 +1415,7 @@ static int blend_matrix(uint32_t mat, uint32_t step)
             return 0;
     } else {
         capture_from(key, truth, step);
-        if (mat == 0x0073A1D0u + 0x10u)
+        if (mat == GA(0x0073A1D0u) + 0x10u)
             s_dbg_car_why = why_not(r, g, step);
         if (!at_take(r, ours ? r->cur : g) || !blend_now(r, step, m))
             return 0;
@@ -1445,10 +1446,10 @@ static int blend_matrix(uint32_t mat, uint32_t step)
 static void dbg_swap(void)
 {
     FILE *f = dbg_file();
-    uint32_t cp = MEM32(0x4D6200u + 0x68u);
+    uint32_t cp = MEM32(GA(0x4D6200u) + 0x68u);
     if (f && MEM32(GAME_STATE) == 5 && cp >= 0x10000u && cp < 0x08000000u)
     {
-        uint32_t car = 0x0073A1D0u, o = MEM32(car + 0x1198u);
+        uint32_t car = GA(0x0073A1D0u), o = MEM32(car + 0x1198u);
         int ok = o >= 0x10000u && o < 0x08000000u;
         fprintf(f, "V %u %u %.4f %d %d %u %.3f %.3f %.3f W %u %08x %.4f %.4f %.4f %.4f %u\n", s_swaps, MEM32(STEP_COUNT), s_lag / STEP_S, s_active,
                 s_dbg_car_drawn, MEM8(car + 0x18F8u), MEMF(cp + 0x30u), MEMF(cp + 0x34u), MEMF(cp + 0x38u),
@@ -1489,7 +1490,7 @@ static void camrel_probe(uint32_t mat, uint32_t step)
 
     f = dbg_file();
     on = f != NULL;
-    if (!on || mat != 0x0073A1D0u + 0x10u || last_sw == s_swaps)
+    if (!on || mat != GA(0x0073A1D0u) + 0x10u || last_sw == s_swaps)
         return;
     v = MEM32(VIEW_PTR);
     if (v < 0x10000u || v >= 0x08000000u)
@@ -1534,7 +1535,7 @@ static void camrel_probe(uint32_t mat, uint32_t step)
  * (sign changes, range): whether a sway is the simulation's, the picture's
  * or the player's own steering. */
 #define HIT_LAT  0.3f
-#define HIT_PAD  0x004AE20Cu      /* the pad manager's records of 0x20 (state 2: open); + 22 the stick's X */
+#define HIT_PAD  GA(0x004AE20Cu)      /* the pad manager's records of 0x20 (state 2: open); + 22 the stick's X */
 static struct {
     uint32_t last_step, step0;
     int      have, win;
@@ -1548,7 +1549,7 @@ static struct {
 
 static void hit_update(void)
 {
-    const float *c = (const float *)(uintptr_t)XBOX_PTR(0x0073A1D0u + 0x10u);
+    const float *c = (const float *)(uintptr_t)XBOX_PTR(GA(0x0073A1D0u) + 0x10u);
     {
         /* BO3_HIREFRESH_WOBBLE=<s> (test aid): at that race time (car +
          * 0x10DC, the car's clock, a step's time a step) the title's
@@ -1559,9 +1560,9 @@ static void hit_update(void)
             const char *e = getenv("BO3_HIREFRESH_WOBBLE");
             at = e && *e ? (float)atof(e) : -1.0f;
         }
-        if (at > 0.0f && MEM32(GAME_STATE) == 5 && MEMF(0x0073A1D0u + 0x10DCu) >= at) {
-            MEMF(0x0073A1D0u + 0x1598u) = MEMF(0x0073A1D0u + 0x10DCu);
-            hr_log("[HIREFRESH] wobble: started at car time %.3f\n", MEMF(0x0073A1D0u + 0x10DCu));
+        if (at > 0.0f && MEM32(GAME_STATE) == 5 && MEMF(GA(0x0073A1D0u) + 0x10DCu) >= at) {
+            MEMF(GA(0x0073A1D0u) + 0x1598u) = MEMF(GA(0x0073A1D0u) + 0x10DCu);
+            hr_log("[HIREFRESH] wobble: started at car time %.3f\n", MEMF(GA(0x0073A1D0u) + 0x10DCu));
             at = -1.0f;
         }
     }
@@ -1652,7 +1653,7 @@ static void hit_picture(uint32_t mat)
     rec_t *rc, *rf;
     int cb, fb, k;
 
-    if (!s_hit.win || mat != 0x0073A1D0u + 0x10u || last_sw == s_swaps)
+    if (!s_hit.win || mat != GA(0x0073A1D0u) + 0x10u || last_sw == s_swaps)
         return;
     last_sw = s_swaps;
     cam = MEM32(MEM32(VIEW_PTR) + VIEW_CAMERA);
@@ -1715,7 +1716,7 @@ void bo3_draw_vehicle(bo3_hirefresh_fn title_fn)
             const char *e = getenv("BO3_HIREFRESH_OVR");
             ovr = e && *e ? atoi(e) : 0;
         }
-        if (ovr && mat != 0x0073A1D0u + 0x10u) {
+        if (ovr && mat != GA(0x0073A1D0u) + 0x10u) {
             memcpy(keep, g, sizeof keep);
             g[13] += 0.5f;
             blend_matrix(mat, step);
@@ -1730,7 +1731,7 @@ void bo3_draw_vehicle(bo3_hirefresh_fn title_fn)
     trace_car(mat, (const float *)(uintptr_t)XBOX_PTR(mat));
     camrel_probe(mat, step);
     hit_picture(mat);
-    if (mat == 0x0073A1D0u + 0x10u)
+    if (mat == GA(0x0073A1D0u) + 0x10u)
         s_dbg_car_drawn++;
     title_fn();
 }
@@ -1873,7 +1874,7 @@ static void marks_probe(void)
 {
     static FILE *f;
     static int on = -1;
-    uint32_t v = 0x4D6200u, cam, frame, n, i;
+    uint32_t v = GA(0x4D6200u), cam, frame, n, i;
     float vm[16], vold[16], mt[16], bl[16], bi[16], p[16], vr[16];
     float w, h;
     rec_t *r, *rv;
@@ -1917,18 +1918,18 @@ static void marks_probe(void)
          * sub_0018EA50): the looks of its slots (the i-th nearest racer from
          * the view's camera: 1 the position, 0 the arrow), its 30-step
          * counter, its mode. */
-        uint32_t mo = 0x735550u, cp = MEM32(v + 0x68u);
+        uint32_t mo = GA(0x735550u), cp = MEM32(v + 0x68u);
         if (cp >= 0x10000u && cp < 0x08000000u)
             fprintf(f, "S %u %u %u %u %u %u %u %u counter %u mode %u cam %.3f %.3f %.3f\n", s_swaps,
                     MEM32(mo), MEM32(mo + 4u), MEM32(mo + 8u), MEM32(mo + 12u), MEM32(mo + 16u),
                     MEM32(mo + 20u), MEM32(mo + 0x1Cu), MEM32(mo + 0x18u), MEM32(mo + 0x20u),
                     MEMF(cp + 0x30u), MEMF(cp + 0x34u), MEMF(cp + 0x38u));
     }
-    n = MEM32(0x73A19Cu);
+    n = MEM32(GA(0x73A19Cu));
     if (n > 8)
         n = 8;
     for (i = 0; i < n; i++) {
-        uint32_t obj = MEM32(0x64B38Cu + i * 0x30u), mp, k;
+        uint32_t obj = MEM32(GA(0x64B38Cu) + i * 0x30u), mp, k;
         int kc = -1, blended;
         const float *q;
         float a[3], c[3];
@@ -1941,7 +1942,7 @@ static void marks_probe(void)
         if (mp < 0x10000u || mp >= 0x08000000u)
             continue;
         for (k = 0; k < 8; k++)
-            if (mp == 0x73A1D0u + k * 0x27E0u + 0x10u)
+            if (mp == GA(0x73A1D0u) + k * 0x27E0u + 0x10u)
                 kc = (int)k;
         rc = rec_find(mp - FRAME_LTM);
         blended = rc && rc->put_gen == s_put_gen
@@ -2071,8 +2072,8 @@ void bo3_race_audio(bo3_hirefresh_fn title_fn)
  * picture's time (the clock lerped like the cars, a step behind at most)
  * and the mode is what the title's own rule (off once t reaches the
  * duration) gives at the steps' time: the step logic reads only that. */
-#define FX_STEPS     0x4D53ACu
-#define FX_STEP_DT   0x4AE1FCu
+#define FX_STEPS     GA(0x4D53ACu)
+#define FX_STEP_DT   GA(0x4AE1FCu)
 void bo3_fx_clock(bo3_hirefresh_fn title_fn)
 {
     uint32_t m = g_eax, steps0, mode0;
@@ -2137,11 +2138,11 @@ void bo3_fx_clock(bo3_hirefresh_fn title_fn)
  * leaves them at the steps' clock (the A/B arm), =ab takes the two in turn,
  * 15 steps each; BO3_HIREFRESH_SPARKLOG=<file> writes a line a push for
  * player 1 (the history after it) and what the draws put in the push buffer. */
-#define RACE_CLOCK   0x60EA20u     /* the race clock, s; moves at the steps */
-#define STEP_TIME    0x60EA1Cu     /* a step's time on that clock */
-#define FRAME_TIME   0x4D53B0u     /* the frame's steps x STEP_TIME */
-#define SPARK_HIST   0x5492B0u     /* the streaks' history, 0x5A0 a player */
-#define SPARK_LIFE   0x418EFCu     /* the first spark descriptor's life (+ 0x5C) */
+#define RACE_CLOCK   GA(0x60EA20u)     /* the race clock, s; moves at the steps */
+#define STEP_TIME    GA(0x60EA1Cu)     /* a step's time on that clock */
+#define FRAME_TIME   GA(0x4D53B0u)     /* the frame's steps x STEP_TIME */
+#define SPARK_HIST   GA(0x5492B0u)     /* the streaks' history, 0x5A0 a player */
+#define SPARK_LIFE   GA(0x418EFCu)     /* the first spark descriptor's life (+ 0x5C) */
 
 static struct {
     int      valid;
@@ -2299,7 +2300,7 @@ static void spark_log_draw(uint32_t sys, float now)
 /* With BO3_HIREFRESH_SPARKLOG, "Q <swap> <bytes>": what the draw wrote
  * into D3D's push buffer (its put pointer, the word the pointer at 0x35FB48
  * points at), 160 bytes a spark quad plus the draw's own state. */
-#define D3D_PUSH 0x35FB48u
+#define D3D_PUSH GA(0x35FB48u)
 
 void bo3_spark_draw(bo3_hirefresh_fn title_fn)
 {

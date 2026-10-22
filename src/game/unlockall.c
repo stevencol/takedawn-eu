@@ -52,6 +52,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "guest_addr.h"
 #include "platform/recomp_patch.h"
 #include "recomp_types.h"
 #ifdef XBOXRECOMP_HAVE_OVERLAY
@@ -63,9 +64,9 @@ extern ptrdiff_t g_xbox_mem_offset;
 #define UA_P(va)   ((uint8_t *)((uintptr_t)g_xbox_mem_offset + (uint32_t)(va)))
 #define UA_M32(va) (*(uint32_t *)UA_P(va))
 
-#define UA_BLOCK      0x0044CFC8u     /* the arrays and their counts */
-#define UA_BLOCK_END  0x0044D240u
-#define UA_ANNOUNCED  0x0044D4B8u     /* the copy of UA_BLOCK .. + 0x162 */
+#define UA_BLOCK      GA(0x0044CFC8u)     /* the arrays and their counts */
+#define UA_BLOCK_END  GA(0x0044D240u)
+#define UA_ANNOUNCED  GA(0x0044D4B8u)     /* the copy of UA_BLOCK .. + 0x162 */
 #define UA_ANN_SIZE   0x162u
 
 static volatile int s_on;
@@ -83,18 +84,18 @@ static void ua_keep_real(void)
 /* What sub_0001BFD0 writes outside the profile. */
 static void ua_open_all(void)
 {
-    memset(UA_P(0x0044D01Fu), 1, 0x49);
-    UA_M32(0x0044D15Cu) = 0x49;
-    memset(UA_P(0x0044D068u), 1, 100);
-    UA_M32(0x0044D160u) = 100;
-    memset(UA_P(0x0044CFC8u), 1, 0x43);
-    UA_M32(0x0044D154u) = 0x43;
-    UA_M32(0x0044D23Cu) = 10;
-    UA_M32(0x0044D158u) = 0x14;
-    UA_M32(0x0044D148u) = 0x14;
-    memset(UA_P(0x0044D00Bu), 1, 0x14);
-    memset(UA_P(0x0044D0CCu), 1, 0x24);
-    UA_M32(0x0044D164u) = 0x24;
+    memset(UA_P(GA(0x0044D01Fu)), 1, 0x49);
+    UA_M32(GA(0x0044D15Cu)) = 0x49;
+    memset(UA_P(GA(0x0044D068u)), 1, 100);
+    UA_M32(GA(0x0044D160u)) = 100;
+    memset(UA_P(GA(0x0044CFC8u)), 1, 0x43);
+    UA_M32(GA(0x0044D154u)) = 0x43;
+    UA_M32(GA(0x0044D23Cu)) = 10;
+    UA_M32(GA(0x0044D158u)) = 0x14;
+    UA_M32(GA(0x0044D148u)) = 0x14;
+    memset(UA_P(GA(0x0044D00Bu)), 1, 0x14);
+    memset(UA_P(GA(0x0044D0CCu)), 1, 0x24);
+    UA_M32(GA(0x0044D164u)) = 0x24;
     memcpy(UA_P(UA_ANNOUNCED), UA_P(UA_BLOCK), UA_ANN_SIZE);
 }
 

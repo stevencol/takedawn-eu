@@ -98,7 +98,9 @@ def main():
     if os.path.isdir(a.source):
         if not a.check:
             raise SystemExit("a manifest is made from a disc image; a folder can only be --check'ed")
-        entries, build = folder_entries(a.source), disc.load_supported()[0]
+        entries = folder_entries(a.source)
+        with open(os.path.join(disc.find_folder_root(a.source), "default.xbe"), "rb") as f:
+            build = disc.check_xbe(f.read())
     else:
         entries, build = image_entries(a.source)
     out = a.out or DEFAULT_OUT % build["id"]

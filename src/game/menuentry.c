@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "guest_addr.h"
 #include "platform/recomp_env.h"
 #include "platform/recomp_patch.h"
 #include "recomp_types.h"
@@ -55,7 +56,7 @@ extern void sub_001D2879(void);          /* the title's heap: (size, tag), stdca
 #define ME_M16(va) (*(uint16_t *)((uintptr_t)g_xbox_mem_offset + (uint32_t)(va)))
 #define ME_M32(va) (*(uint32_t *)((uintptr_t)g_xbox_mem_offset + (uint32_t)(va)))
 
-#define ME_PAGE       0x0055ABC4u     /* the Settings page's object */
+#define ME_PAGE       GA(0x0055ABC4u)     /* the Settings page's object */
 #define ME_CURSOR     (ME_PAGE + 4)
 #define ME_COUNT      (ME_PAGE + 6)
 #define ME_ITEMS      (ME_PAGE + 8)
@@ -135,7 +136,7 @@ static void me_items(void)
  * to open then. The title stays paused on its menu under the overlay (the
  * overlay pauses the host on top) and is still on it when the overlay
  * closes; B and Start are the title's as before. */
-#define PE_PAGE      0x005593E4u
+#define PE_PAGE      GA(0x005593E4u)
 #define PE_CURSOR    (PE_PAGE + 4)
 #define PE_COUNT     (PE_PAGE + 6)
 #define PE_ITEMS     (PE_PAGE + 8)

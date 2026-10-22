@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "../guest_addr.h"
 
 /* ── ICALL trace ring buffer ───────────────────────────────── */
 

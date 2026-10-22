@@ -1,5 +1,5 @@
 {
-  "_comment": "The one place the installer learns which disc it supports. The recompiler's seeds (config/seed_functions.json), the spin-wait list and the entry point in src/game/main.c are all addresses in this exact default.xbe, so any other build (PAL, Japan, a patched or trimmed XBE) must be refused, not tried. To support another build, add an entry here AND regenerate/verify against it.",
+  "_comment": "The one place the installer learns which discs it supports. The recompiler's seeds (config/seed_functions.json), the spin-wait list, the patches and the addresses in src/game are written for the NTSC-U default.xbe; another build is supported only through its address table, config/region/<id>.json (tools/region/region.py), and its disc manifest, config/disc/<id>.manifest. Any other executable (another region, a patched or trimmed XBE) must be refused, not tried.",
   "builds": [
     {
       "id": "ntsc-u-retail",
@@ -13,6 +13,20 @@
         "region": "North America",
         "base": "0x10000",
         "entry": "0x001D2807"
+      }
+    },
+    {
+      "id": "pal-retail",
+      "name": "Burnout 3: Takedown, Europe (PAL) retail",
+      "game_dir": "Burnout 3 Takedown",
+      "xbe": {
+        "file": "default.xbe",
+        "sha256": "e15aa7dc0cd8f966a523b0da1bc98ab9e1e92f97bc042113baeaae9fc47db33c",
+        "size": 4308992,
+        "title_id": "0x4541005B",
+        "region": "Rest of World (PAL)",
+        "base": "0x10000",
+        "entry": "0x001D2BC7"
       }
     }
   ]

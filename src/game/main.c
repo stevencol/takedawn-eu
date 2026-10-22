@@ -63,6 +63,7 @@
 /* Every pad motor off, from a crash handler (toolkit, src/input/input_core.c). */
 extern void xbox_InputPanicStop(int wait_ms);
 
+#include "guest_addr.h"
 #include "recomp_icall_feedback.h"
 #include "kernel.h"
 #include "xbox_memory_layout.h"
@@ -495,7 +496,7 @@ static int bo3_voice_tag(uint32_t *out, int max)
         if ((a & 0xFFFu) == 0 && i && a >= 0x04000000u)
             break;
         v = *(const uint32_t *)(mem + a);
-        if (v < 0x00011010u || v >= 0x002CC200u)
+        if (v < GA(0x00011010u) || v >= GA(0x002CC200u))
             continue;
         /* call rel32, or an indirect call (FF /2) of 2, 3 or 6 bytes. */
         if (mem[v - 5] == 0xE8 ||
@@ -523,7 +524,7 @@ static void print_guest_stack(void)
     fprintf(stderr, "\n  guest stack return candidates:");
     for (i = 0; i < 256 && shown < 12; i++) {
         uint32_t v = sp[i];
-        if (v >= 0x00011000u && v < 0x00400000u) {
+        if (v >= GA(0x00011000u) && v < 0x00400000u) {
             fprintf(stderr, " %08X", v);
             shown++;
         }
@@ -678,7 +679,7 @@ static int hm_ok(uint32_t p)
 
 static void hud_mon_flip(uint32_t flip)
 {
-    static const uint32_t scenes[4] = { 0x54F914, 0x54F984, 0x557A20, 0x45BAD0 };
+    static const uint32_t scenes[4] = { GA(0x54F914), GA(0x54F984), GA(0x557A20), GA(0x45BAD0) };
     static double last_x0 = -1.0, last_x1 = -1.0, last_aspect = -1.0;
     static int last_fix = -1;
     const double eps = 0.5;
@@ -776,7 +777,7 @@ static void hud_mon_flip(uint32_t flip)
  * connected pad: the port, wButtons and the eight analog bytes (A B X Y
  * Black White, LT, RT). tools/headless/reverse_scene.sh asserts on it. Off
  * unless set. */
-#define DL_PADS   0x004AE20Cu           /* the pad manager (sub_00021A50's edi) */
+#define DL_PADS   GA(0x004AE20Cu)           /* the pad manager (sub_00021A50's edi) */
 static FILE *s_dl_f;
 static volatile uint32_t s_uw_flips;    /* the title's flips (uw_flip, below) */
 
@@ -866,17 +867,17 @@ static void pace_log(uint32_t flip)
 
     if (!s_pl_f || !m)
         return;
-    stage = HD_M32(0x4D5370);
+    stage = HD_M32(GA(0x4D5370));
     fprintf(s_pl_f, "P %u t %.3f req %u cur %u mode %u/%u steps %d gs %u"
             " wt %u slow %u run %u crash %u%u st %u obj %08X gt %u ft %.5f"
             " pl %u mu %u/%u\n",
-            flip, pace_ms(), m[0x4D538D], m[0x4D538E], HD_M32(0x4D5390),
-            HD_M32(0x4D5394), (int)HD_M32(0x4D53AC), HD_M32(0x4A1EB4),
-            HD_M32(0x60EA0C), HD_M32(0x60EA18), m[0x60EA28],
-            m[0x73BACA], m[0x73BACA + 0x27E0], HD_M32(0x4D53B4),
+            flip, pace_ms(), m[GA(0x4D538D)], m[GA(0x4D538E)], HD_M32(GA(0x4D5390)),
+            HD_M32(GA(0x4D5394)), (int)HD_M32(GA(0x4D53AC)), HD_M32(GA(0x4A1EB4)),
+            HD_M32(GA(0x60EA0C)), HD_M32(GA(0x60EA18)), m[GA(0x60EA28)],
+            m[GA(0x73BACA)], m[GA(0x73BACA) + 0x27E0], HD_M32(GA(0x4D53B4)),
             (stage >= 0x10000u && stage < 0x08000000u) ? HD_M32(stage + 0x1B8) : 0,
-            HD_M32(0x4AE1EC), HD_MF(0x4D53B0),
-            HD_M32(0x73A1C0), HD_M32(0x4115E8 + 0x5F4), HD_M32(0x4115E8 + 0x5F8));
+            HD_M32(GA(0x4AE1EC)), HD_MF(GA(0x4D53B0)),
+            HD_M32(GA(0x73A1C0)), HD_M32(GA(0x4115E8) + 0x5F4), HD_M32(GA(0x4115E8) + 0x5F8));
 }
 
 static void pace_log_start(void)
@@ -1002,7 +1003,7 @@ static double rival_switch(int which)
         if (e && sscanf(e, "%lf,%lf", &n, &f) == 2 && n > 0.0 && f >= n) {
             fprintf(stderr, "[RIVAL] switch at %.1f / %.1f (BO3_RIVAL_SWITCH); the marker"
                     " hidden past %.1f (%.1f with 0x5A3759 = %u)\n", n, f,
-                    HD_MF(0x60E560), HD_MF(0x60E540), (unsigned)(HD_M32(0x5A3758) >> 8 & 0xFFu));
+                    HD_MF(GA(0x60E560)), HD_MF(GA(0x60E540)), (unsigned)(HD_M32(GA(0x5A3758)) >> 8 & 0xFFu));
         } else {
             n = RIVAL_NEAR;
             f = RIVAL_FAR;
@@ -1024,7 +1025,7 @@ static void scenery_props_dump(void)
     uint32_t trk, tab;
     int n, i;
 
-    if (!g_xbox_mem_offset || !(trk = HD_M32(0x7397B4)))
+    if (!g_xbox_mem_offset || !(trk = HD_M32(GA(0x7397B4))))
         return;
     n = *(const int16_t *)((uintptr_t)g_xbox_mem_offset + trk + 0x34);
     tab = HD_M32(trk + 0x38);
@@ -1102,11 +1103,11 @@ static void fx_at_flip(uint32_t flip)
             fprintf(stderr, "BO3_FX_AT: flip %u, graphics.vehicle_detail = %s"
                     " (x%.0f; title's distances %.0f %.0f %.0f / %.0f %.0f)\n",
                     flip, k[v], vehicle_lod_scale(),
-                    g_xbox_mem_offset ? HD_MF(0x4D61D8) : 0.0f,
-                    g_xbox_mem_offset ? HD_MF(0x4D61DC) : 0.0f,
-                    g_xbox_mem_offset ? HD_MF(0x4D61E0) : 0.0f,
-                    g_xbox_mem_offset ? HD_MF(0x4D61E4) : 0.0f,
-                    g_xbox_mem_offset ? HD_MF(0x4D61E8) : 0.0f);
+                    g_xbox_mem_offset ? HD_MF(GA(0x4D61D8)) : 0.0f,
+                    g_xbox_mem_offset ? HD_MF(GA(0x4D61DC)) : 0.0f,
+                    g_xbox_mem_offset ? HD_MF(GA(0x4D61E0)) : 0.0f,
+                    g_xbox_mem_offset ? HD_MF(GA(0x4D61E4)) : 0.0f,
+                    g_xbox_mem_offset ? HD_MF(GA(0x4D61E8)) : 0.0f);
             continue;
         }
         if (!strcmp(what, "sdetail")) {
@@ -1135,7 +1136,7 @@ static void fx_at_flip(uint32_t flip)
              * distance, in a paused scene). */
             static float saved[64];
             static unsigned char have[64];
-            uint32_t trk = g_xbox_mem_offset ? HD_M32(0x7397B4) : 0;
+            uint32_t trk = g_xbox_mem_offset ? HD_M32(GA(0x7397B4)) : 0;
             int t = atoi(what + 5);
 
             if (trk && t >= 0 && t < 64
@@ -1171,9 +1172,9 @@ static void fx_at_flip(uint32_t flip)
         fprintf(stderr, "BO3_FX_AT: flip %u, %s = %g (bloom threshold %.3f"
                 " intensity %.3f, blur strength %.3f)\n", flip,
                 blur ? "graphics.motion_blur" : "graphics.bloom", dv,
-                g_xbox_mem_offset ? HD_MF(0x7397C0) : 0.0f,
-                g_xbox_mem_offset ? HD_MF(0x7397C4) : 0.0f,
-                g_xbox_mem_offset ? HD_MF(0x4D6340 + 0x58) : 0.0f);
+                g_xbox_mem_offset ? HD_MF(GA(0x7397C0)) : 0.0f,
+                g_xbox_mem_offset ? HD_MF(GA(0x7397C4)) : 0.0f,
+                g_xbox_mem_offset ? HD_MF(GA(0x4D6340) + 0x58) : 0.0f);
     }
     fclose(f);
 }
@@ -1221,13 +1222,13 @@ static void hud_dump_frames(FILE *f, uint32_t fr, int depth)
 
 static void hud_dump_scenes(FILE *f)
 {
-    static const uint32_t scenes[4] = { 0x54F914, 0x54F984, 0x557A20, 0x45BAD0 };
+    static const uint32_t scenes[4] = { GA(0x54F914), GA(0x54F984), GA(0x557A20), GA(0x45BAD0) };
     int s;
 
     fprintf(f, "rect0 %.2f %.2f %.2f %.2f rect1 %.2f %.2f %.2f %.2f nplayers %u\n",
-            HD_MF(0x54F948), HD_MF(0x54F94C), HD_MF(0x54F950), HD_MF(0x54F954),
-            HD_MF(0x54F9B8), HD_MF(0x54F9BC), HD_MF(0x54F9C0), HD_MF(0x54F9C4),
-            HD_M32(0x54FA70));
+            HD_MF(GA(0x54F948)), HD_MF(GA(0x54F94C)), HD_MF(GA(0x54F950)), HD_MF(GA(0x54F954)),
+            HD_MF(GA(0x54F9B8)), HD_MF(GA(0x54F9BC)), HD_MF(GA(0x54F9C0)), HD_MF(GA(0x54F9C4)),
+            HD_M32(GA(0x54FA70)));
     for (s = 0; s < 4; s++) {
         uint32_t sc = scenes[s], root = HD_M32(sc + 0x14), nl = HD_M32(sc + 0x30);
         uint32_t la = HD_M32(sc + 0x2C), l;
@@ -2018,7 +2019,7 @@ static int host_main(void)
      * fence as an honest acknowledgement of everything submitted; the chain
      * is re-read and bounds-checked on every poll, so registering before the
      * device exists is harmless. */
-    xbox_Nv2aMirrorFence(0x0035FB48u, 0x2Cu, 0x30u);
+    xbox_Nv2aMirrorFence(GA(0x0035FB48u), 0x2Cu, 0x30u);
 
     /* The vblank count the XMV player paces on. sub_0034E0A0 hands back
      * [device+0x1DE8], which only D3D's vblank handler (sub_00356DA0, inc at
@@ -2032,7 +2033,7 @@ static int host_main(void)
      * it run at 60 + flips per second, so it is registered only where no
      * vblank is delivered. */
 #if !defined(BO3_FORK_RUNTIME)
-    xbox_Nv2aFrameCounter(0x0035FB48u, 0x1DE8u);
+    xbox_Nv2aFrameCounter(GA(0x0035FB48u), 0x1DE8u);
 #endif
 
 #if defined(BO3_HAVE_REPORTS)
@@ -2045,7 +2046,7 @@ static int host_main(void)
     xbox_BugReportArm();        /* RECOMP_DEBUG=bug_report=<seconds>[:shot] */
 #endif
 
-    printf("\nStarting game at entry point 0x001D2807...\n");
+    printf("\nStarting game at entry point 0x%08X...\n", (unsigned)GA(0x001D2807u));
     RECOMP_ICALL_FEEDBACK_INIT();
     xbe_entry_point();
 
@@ -2207,7 +2208,7 @@ static void hdr_mark(uint32_t tag)
      * switch marked, so the setting alone never gave the scene its light. */
     if (!nv2a_host_hdr())
         return;
-    dev = HD_M32(0x35FB48);
+    dev = HD_M32(GA(0x35FB48));
     if (!dev)
         return;
     put = HD_M32(dev);
@@ -2245,10 +2246,10 @@ static void texup_loading_flip(void)
 
     if (!g_xbox_mem_offset)
         return;
-    state = HD_M32(0x4D53B4);
-    stage = HD_M32(0x4D5370);
+    state = HD_M32(GA(0x4D53B4));
+    stage = HD_M32(GA(0x4D5370));
     pre = state == 5 && stage >= 0x10000u && stage < 0x08000000u && HD_M32(stage + 0x1B8u)
-       && HD_M32(0x73A1D0u + 0x134Cu) < 2;
+       && HD_M32(GA(0x73A1D0u) + 0x134Cu) < 2;
     if (state != 5 && state != 0) {
         how = 2;
     } else if (pre) {
@@ -2262,11 +2263,11 @@ static void texup_loading_flip(void)
     {   /* RECOMP_DEBUG=texup_log: what it read, at each change */
         static uint32_t last = 0xFFFFFFFFu;
         uint32_t mode = stage >= 0x10000u && stage < 0x08000000u ? HD_M32(stage + 0x1B8u) : 0;
-        uint32_t key = (state & 0xFF) | (mode ? 0x100u : 0) | (HD_M32(0x73A1D0u + 0x134Cu) & 0xFF) << 12
+        uint32_t key = (state & 0xFF) | (mode ? 0x100u : 0) | (HD_M32(GA(0x73A1D0u) + 0x134Cu) & 0xFF) << 12
                      | (uint32_t)how << 24;
         if (key != last && recomp_env(RENV_TEXUP_LOG))
             fprintf(stderr, "[TEXUP] title state %u, stage %s, car phase %u: %s (flip %u)\n",
-                    state, mode ? "on" : "none", HD_M32(0x73A1D0u + 0x134Cu),
+                    state, mode ? "on" : "none", HD_M32(GA(0x73A1D0u) + 0x134Cu),
                     how == 2 ? "loading" : how == 1 ? "prestart" : "play", s_uw_flips);
         last = key;
     }
@@ -2298,7 +2299,7 @@ static void uw_flip(void)
      * see BO3_PACE_LOG), for the overlay's frame-time graph: a frame of two
      * steps moves the world twice as far (present_cadence.h, BO-115). */
     if (g_xbox_mem_offset)
-        xbox_PresentCadenceSteps(n, (int)HD_M32(0x4D53AC));
+        xbox_PresentCadenceSteps(n, (int)HD_M32(GA(0x4D53AC)));
     s_uw_frame = 0.0;
     s_stage_drew = 0;
 }
@@ -2340,7 +2341,7 @@ static double hud_frame_aspect(void)
 static int uw_fe_owns_picture(void)
 {
     const uint8_t *m = (const uint8_t *)(uintptr_t)g_xbox_mem_offset;
-    uint32_t layers = *(const uint32_t *)(m + 0x557A20u + 0x2Cu);
+    uint32_t layers = *(const uint32_t *)(m + GA(0x557A20u) + 0x2Cu);
     return layers && *(const uint32_t *)(m + layers + 8u) != 0;
 }
 
@@ -2442,7 +2443,7 @@ static double s_map_box_d;              /* the info box's shift */
 static int map_info_obj(uint32_t obj, double lo, double hi)
 {
     uint32_t cb = HD_M32(obj + 0x44);
-    if (cb != 0x000F9CE0u && cb != 0x001C51A0u && cb != 0x001C1A60u && cb != 0x001C5330u)
+    if (cb != GA(0x000F9CE0u) && cb != GA(0x001C51A0u) && cb != GA(0x001C1A60u) && cb != GA(0x001C5330u))
         return 0;
     return HD_MF(obj + 12) < 416.0f && lo > 0.5 && hi < 639.5 && hi - lo < 400.0;
 }
@@ -2451,7 +2452,7 @@ static int map_info_obj(uint32_t obj, double lo, double hi)
  * drawn object, when its frames are synced) and where its shields go. */
 static void map_walk(uint32_t root, double rwx, double rsx, double rlx, double rlsx)
 {
-    uint32_t sc = 0x557A20u, la = HD_M32(sc + 0x2C), nl = HD_M32(sc + 0x30), l, n, fr;
+    uint32_t sc = GA(0x557A20u), la = HD_M32(sc + 0x2C), nl = HD_M32(sc + 0x30), l, n, fr;
     int guard, i, j, sel = -1, nbox = 0;
     double bx0 = 1e9, bx1 = -1e9, by0 = 1e9, by1 = -1e9;
     double px[MAP_ICONS], py[MAP_ICONS];
@@ -2463,7 +2464,7 @@ static void map_walk(uint32_t root, double rwx, double rsx, double rlx, double r
         if (HD_M32(la + l * 16) & 1u)           /* a hidden layer */
             continue;
         for (n = HD_M32(la + l * 16 + 8), guard = 0; fe_ok(n) && guard < 500; n = HD_M32(n), guard++)
-            if (HD_M32(n + 0x44) == 0x001C0790u && fe_ok(HD_M32(n + 0x40))) {
+            if (HD_M32(n + 0x44) == GA(0x001C0790u) && fe_ok(HD_M32(n + 0x40))) {
                 s_map_frame = HD_M32(n + 0x40);
                 break;
             }
@@ -2484,7 +2485,7 @@ static void map_walk(uint32_t root, double rwx, double rsx, double rlx, double r
             sx = HD_MF(fr + 0x28), sy = HD_MF(fr + 0x2C);
             x = HD_MF(n + 8), y = HD_MF(n + 12), w = HD_MF(n + 0x10), h = HD_MF(n + 0x14);
             a = HD_MF(fr + 0x20) + (double)sx * x, b = a + (double)sx * w;
-            if (fr == s_map_frame && cb == 0x000D77A0u && s_map_n < MAP_ICONS) {
+            if (fr == s_map_frame && cb == GA(0x000D77A0u) && s_map_n < MAP_ICONS) {
                 double c = (a + b) / 2.0;
                 s_map_cx[s_map_n] = c;
                 s_map_cy[s_map_n] = HD_MF(fr + 0x24) + (double)sy * (y + h / 2.0f);
@@ -2545,15 +2546,15 @@ static void fe_decor(double *dx, double *dw)
     int left, right, a_lo;
 
     *dx = *dw = 0.0;
-    if (s_fe_scene != 0x557A20u || !g_xbox_mem_offset || !fe_ok(obj))
+    if (s_fe_scene != GA(0x557A20u) || !g_xbox_mem_offset || !fe_ok(obj))
         return;
     cb = HD_M32(obj + 0x44);
     /* A box across the frame that is not decoration: the selected menu
      * line's brackets (sub_000FB900) sit beside its text, inside the box. */
-    if (cb == 0x000FB900u)
+    if (cb == GA(0x000FB900u))
         return;
     fr = HD_M32(obj + 0x40);
-    root = HD_M32(0x557A20u + 0x14u);
+    root = HD_M32(GA(0x557A20u) + 0x14u);
     if (!fe_ok(fr) || !fe_ok(root))
         return;
     rwx = HD_MF(root + 0x20), rsx = HD_MF(root + 0x28);
@@ -2588,7 +2589,7 @@ static void fe_decor(double *dx, double *dw)
         if (fr == s_map_frame) {
             if (!stretched)
                 return;
-            if (cb == 0x000D77A0u || cb == 0x0005AC20u) {
+            if (cb == GA(0x000D77A0u) || cb == GA(0x0005AC20u)) {
                 /* A shield, or a label beside one: its place, its shape. */
                 float sy = HD_MF(fr + 0x2C);
                 double cy = HD_MF(fr + 0x24) + (double)sy * (HD_MF(obj + 12) + HD_MF(obj + 0x14) / 2.0f);
@@ -3328,15 +3329,14 @@ int main(int argc, char **argv)
         xr_log_announce();
     xbox_OverlaySetAbout(bo3_version_long());
     /* The menu's own fonts for the overlay (BO-80): GlobalFont and HeadFont,
-     * the two DXT5 atlases and glyph tables inside the US retail
-     * default.xbe, read from the player's copy at start. Another file (by
-     * size and SHA-256, the install manifest's) or none: the overlay keeps
-     * its own font. */
+     * the two DXT5 atlases and glyph tables inside the retail default.xbe,
+     * read from the player's copy at start (the same file offsets in the US
+     * and PAL executables). Another file (by size and SHA-256, the one the
+     * build was translated from) or none: the overlay keeps its own font. */
     {
         static const xbox_overlay_bitmap_font global_font = { 0x3b9198, 182, 0x3ba958, 256, 256 };
         static const xbox_overlay_bitmap_font head_font = { 0x3ca978, 47, 0x3cb058, 128, 256 };
-        xbox_OverlaySetGameFonts(s_xbe_path, 4308992ull,
-                                 "9f497acd82adb8edfb72cc31aeeb35010b45d32b13a3f1fc6540717ff24d13f9",
+        xbox_OverlaySetGameFonts(s_xbe_path, 4308992ull, BO3_XBE_SHA256,
                                  &global_font, &head_font);
     }
     /* The menu's own pictures, for the overlay's sprites (BO-80): the arrows,

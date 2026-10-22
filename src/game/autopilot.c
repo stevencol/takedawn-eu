@@ -51,6 +51,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "guest_addr.h"
 #include "platform/recomp_env.h"
 #include "platform/recomp_patch.h"
 #include "recomp_types.h"
@@ -64,7 +65,7 @@ extern void sub_00179760(void);
 #define AP_M32(va) (*(uint32_t *)((uintptr_t)g_xbox_mem_offset + (uint32_t)(va)))
 #define AP_MF(va)  (*(float *)((uintptr_t)g_xbox_mem_offset + (uint32_t)(va)))
 
-#define AP_CAR1         0x0073A1D0u     /* the world (0x60EA00) + 0x12B7D0: player 1's CB3PlayerCar */
+#define AP_CAR1         GA(0x0073A1D0u)     /* the world (0x60EA00) + 0x12B7D0: player 1's CB3PlayerCar */
 #define AP_CAR_AI       0x27D8u         /* byte: the AI drives this player car */
 #define AP_CAR_PLAYER   0x27D0u         /* the player index */
 #define AP_CAR_PHASE    0x134Cu         /* 1 before the GO, 2 in play, 3 finished */
@@ -74,15 +75,15 @@ extern void sub_00179760(void);
 #define AP_CAR_TIME     0x10DCu         /* float: the race time, s */
 #define AP_CAR_LAPS     0x10E4u         /* the laps done */
 #define AP_CAR_BEST     0x110Cu         /* float: the best lap, s */
-#define AP_RACERS       0x0073A19Cu     /* the number of cars racing */
-#define AP_CTLS         0x004AE724u     /* the four controller records */
+#define AP_RACERS       GA(0x0073A19Cu)     /* the number of cars racing */
+#define AP_CTLS         GA(0x004AE724u)     /* the four controller records */
 #define AP_CTL_SIZE     0x188u
 #define AP_CTL_ACTIVE   0x184u          /* float: the time of its last input */
-#define AP_NOW          0x004AE200u     /* float: the clock sub_00019A10 stamps it with */
-#define AP_MODULE       0x004D5370u     /* the current module */
-#define AP_VT_GAME      0x003A9ACCu     /* the game module's vtable */
-#define AP_PAUSED_BY    0x004D537Cu     /* -1 while not paused */
-#define AP_MODULE_STEP  0x004D53B4u     /* 6: the module is being left */
+#define AP_NOW          GA(0x004AE200u)     /* float: the clock sub_00019A10 stamps it with */
+#define AP_MODULE       GA(0x004D5370u)     /* the current module */
+#define AP_VT_GAME      GA(0x003A9ACCu)     /* the game module's vtable */
+#define AP_PAUSED_BY    GA(0x004D537Cu)     /* -1 while not paused */
+#define AP_MODULE_STEP  GA(0x004D53B4u)     /* 6: the module is being left */
 
 static int s_driving;       /* the autopilot drove the last update */
 static uint32_t s_phase;    /* player 1's phase at the last update */

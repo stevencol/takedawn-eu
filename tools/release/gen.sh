@@ -36,8 +36,9 @@ fi
 
 XBE="$REPO/Burnout 3 Takedown/default.xbe"
 [ -f "$XBE" ] || die "missing $XBE"
-want_xbe="$(sed -n 's/.*"sha256": *"\([0-9a-f]*\)".*/\1/p' "$REPO/tools/install/supported.json" | head -1)"
-[ "$(sha256_of "$XBE")" = "$want_xbe" ] || die "default.xbe is not the supported build ($want_xbe)"
+want_xbe="$(sed -n 's/.*"sha256": *"\([0-9a-f]*\)".*/\1/p' "$REPO/tools/install/supported.json")"
+printf '%s\n' "$want_xbe" | grep -qx "$(sha256_of "$XBE")" \
+    || die "default.xbe is not a supported build ($(echo $want_xbe))"
 [ -f "$REPO/config/patches.json" ] || die "config/patches.json is missing"
 
 # regen.sh takes its Python from <repo>/.venv; a worktree may borrow one.

@@ -46,13 +46,32 @@ if [[ -n "${TRACE_FUNCS:-}" && "$TRACE_FUNCS" != /* ]]; then
     TRACE_FUNCS="$BO3/$TRACE_FUNCS"
 fi
 
+# Which release default.xbe is (tools/region/region.py): NTSC-U uses config/
+# as written; another release gets config/ translated to its addresses
+# (config/region/<build>.json) and src/game/recomp/gen/region_map.h.
+echo "==> region"
+BUILD="$(py -3 "$BO3/tools/region/region.py" apply --xbe "$XBE" --out "$OUT/region")" || exit 1
+echo "    $BUILD"
+while IFS='=' read -r k v; do
+    case "$k" in
+        patches)    R_PATCHES="$v" ;;
+        seeds)      R_SEEDS="$v" ;;
+        spin_waits) R_SPIN="$v" ;;
+        manual)     R_MANUAL="$v" ;;
+    esac
+done < "$OUT/region/files.txt"
+# A disassembly of another release is no use: start again when it changes.
+if [[ "$(cat "$OUT/build.txt" 2>/dev/null)" != "$BUILD" ]]; then
+    rm -f "$OUT/disasm/functions.json"
+    echo "$BUILD" > "$OUT/build.txt"
+fi
+
 SEEDS=()
-[[ -f "$BO3/config/seed_functions.json" ]] && \
-    SEEDS=(--seed-functions "$BO3/config/seed_functions.json")
+[[ -f "$R_SEEDS" ]] && SEEDS=(--seed-functions "$R_SEEDS")
 # Busy-wait loops lowered to RECOMP_SPIN_WAIT (only spin unless the runtime's
 # present.pacing is sleep); SPIN_WAITS= (empty) generates without them.
 SPIN=()
-SPIN_WAITS="${SPIN_WAITS-$BO3/config/spin_waits.json}"
+SPIN_WAITS="${SPIN_WAITS-$R_SPIN}"
 [[ -n "$SPIN_WAITS" && -f "$SPIN_WAITS" ]] && SPIN=(--spin-waits "$SPIN_WAITS")
 
 # Opt-in guest patches (tools.recomp --patches): config/patches.json. Each is
@@ -60,7 +79,7 @@ SPIN_WAITS="${SPIN_WAITS-$BO3/config/spin_waits.json}"
 # as shipped until the setting says otherwise. PATCHES= (empty) generates
 # without them.
 PATCH=()
-PATCHES="${PATCHES-$BO3/config/patches.json}"
+PATCHES="${PATCHES-$R_PATCHES}"
 [[ -n "$PATCHES" && -f "$PATCHES" ]] && PATCH=(--patches "$PATCHES")
 
 if [[ "${1:-}" == "--disasm" || ! -f "$OUT/disasm/functions.json" ]]; then
@@ -93,7 +112,7 @@ echo "==> recomp"
     --disasm-dir  "$OUT/disasm" \
     --func-id-dir "$OUT/func_id" \
     --abi-dir     "$OUT/abi" \
-    --exclude-manual "$BO3/src/game/recomp/recomp_manual.c" \
+    --exclude-manual "$R_MANUAL" \
     ${SPIN[@]+"${SPIN[@]}"} \
     ${PATCH[@]+"${PATCH[@]}"} \
     ${TRACE_FUNCS:+--trace-functions "$TRACE_FUNCS"} \

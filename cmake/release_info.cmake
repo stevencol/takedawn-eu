@@ -42,18 +42,52 @@ if(BO3_CODENAME MATCHES "[\"\\\\]")
     message(FATAL_ERROR "VERSION: the codename cannot hold a quote or a backslash")
 endif()
 
-# ── the regen key ────────────────────────────────────────────────────
+# ── the release the generated code is of ─────────────────────────────
+# regen.sh names it in gen/region_map.h (tools/region/region.py apply); no
+# generated code yet, or one from before that file: NTSC-U.
+set(BO3_BUILD "ntsc-u-retail")
+set(_region_h "${BO3_ROOT}/src/game/recomp/gen/region_map.h")
+if(EXISTS "${_region_h}")
+    file(STRINGS "${_region_h}" _b REGEX "^#define BO3_BUILD_ID \"[a-z0-9-]+\"$")
+    if(_b MATCHES "\"([a-z0-9-]+)\"")
+        set(BO3_BUILD "${CMAKE_MATCH_1}")
+    endif()
+    if(NOT CMAKE_SCRIPT_MODE_FILE)
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_region_h}")
+    endif()
+endif()
 file(READ "${BO3_ROOT}/tools/install/supported.json" _supported)
-string(REGEX MATCH "\"sha256\": *\"([0-9a-f]+)\"" _m "${_supported}")
-set(_key_text "default.xbe ${CMAKE_MATCH_1}\n")
+string(JSON _nbuilds LENGTH "${_supported}" builds)
+math(EXPR _lastb "${_nbuilds} - 1")
+set(_xbe_sha "")
+foreach(_i RANGE ${_lastb})
+    string(JSON _id GET "${_supported}" builds ${_i} id)
+    if(_id STREQUAL BO3_BUILD)
+        string(JSON _xbe_sha GET "${_supported}" builds ${_i} xbe sha256)
+        string(JSON BO3_BUILD_NAME GET "${_supported}" builds ${_i} name)
+        # The installer shows the title on its own: "North America (NTSC-U) retail".
+        string(REGEX REPLACE "^[^,]*, " "" BO3_BUILD_NAME "${BO3_BUILD_NAME}")
+    endif()
+endforeach()
+if(NOT _xbe_sha)
+    message(FATAL_ERROR "tools/install/supported.json has no build ${BO3_BUILD}")
+endif()
+
+# ── the regen key ────────────────────────────────────────────────────
+set(_key_text "default.xbe ${_xbe_sha}\n")
 set(_inputs
     "${BO3_ROOT}/config/patches.json"
     "${BO3_ROOT}/config/seed_functions.json"
     "${BO3_ROOT}/config/spin_waits.json"
     "${BO3_ROOT}/regen.sh"
-    "${BO3_ROOT}/src/game/recomp/recomp_manual.c")
+    "${BO3_ROOT}/src/game/recomp/recomp_manual.c"
+    "${BO3_ROOT}/tools/region/region.py")
 set(_names config/patches.json config/seed_functions.json config/spin_waits.json regen.sh
-    src/game/recomp/recomp_manual.c)
+    src/game/recomp/recomp_manual.c tools/region/region.py)
+if(NOT BO3_BUILD STREQUAL "ntsc-u-retail")
+    list(APPEND _inputs "${BO3_ROOT}/config/region/${BO3_BUILD}.json")
+    list(APPEND _names "config/region/${BO3_BUILD}.json")
+endif()
 foreach(_stage xbe_parser disasm func_id abi_analysis recomp)
     file(GLOB_RECURSE _py RELATIVE "${XBOXRECOMP_DIR}" "${XBOXRECOMP_DIR}/tools/${_stage}/*.py")
     list(SORT _py)
@@ -85,9 +119,9 @@ string(SHA256 BO3_REGEN_KEY "${_key_text}")
 string(SUBSTRING "${BO3_REGEN_KEY}" 0 16 BO3_REGEN_KEY)
 
 # ── the disc manifest ────────────────────────────────────────────────
-set(_manifest "${BO3_ROOT}/config/disc/ntsc-u-retail.manifest")
+set(_manifest "${BO3_ROOT}/config/disc/${BO3_BUILD}.manifest")
 file(STRINGS "${_manifest}" _lines)
-set(_inc "/* Made by cmake/release_info.cmake from config/disc/ntsc-u-retail.manifest. */\n")
+set(_inc "/* Made by cmake/release_info.cmake from config/disc/${BO3_BUILD}.manifest. */\n")
 set(_count 0)
 foreach(_line ${_lines})
     if(_line MATCHES "^# id ([0-9a-f]+)")
@@ -176,6 +210,7 @@ set(_header "/* Made by cmake/release_info.cmake at configure time. */
 #define BO3_REGEN_KEY \"${BO3_REGEN_KEY}\"
 #define BO3_MANIFEST_ID \"${BO3_MANIFEST_ID}\"
 #define BO3_MANIFEST_BUILD \"${BO3_MANIFEST_BUILD}\"
+#define BO3_MANIFEST_NAME \"${BO3_BUILD_NAME}\"
 #define BO3_MANIFEST_TITLE_ID ${BO3_MANIFEST_TITLE_ID}u
 #define BO3_GEN_TREE \"${BO3_GEN_TREE}\"
 #define BO3_GEN_PATCHES \"${BO3_GEN_PATCHES}\"
