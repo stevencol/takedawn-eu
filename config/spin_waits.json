@@ -9,6 +9,11 @@
     {
       "va": "0x00351A70",
       "note": "XDK D3D8 wait-for-idle in sub_00351A30, after its KickOff: polls the push buffer's GET against PUT and PGRAPH status. Woken when the executor advances GET (xbox_memory_layout.c)."
+    },
+    {
+      "va": "0x00356E50",
+      "stores": true,
+      "note": "XDK D3D vblank DPC (sub_00356DA0): acks PCRTC_INTR_0 = 1 and polls PMC_INTR_0 bit 24 until it clears. On the timer thread at DISPATCH; each pass takes its own ack (xbox_VblankAckSpin, kernel_bridge.c), as the write-1-to-clear register does on the console, so the DPC no longer waits on the vblank-ack thread (a freeze after the overlay's Restart now on Android)."
     }
   ]
 }

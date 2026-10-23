@@ -195,7 +195,7 @@ index 8f06338..2d63383 100644
          s_pa.flip += now_ns() - t_flip0;
          if (++s_pa.n == 300) {
 diff --git a/src/kernel/kernel_bridge.c b/src/kernel/kernel_bridge.c
-index aac02db..c7d9b75 100644
+index aac02db..12ae7a1 100644
 --- a/src/kernel/kernel_bridge.c
 +++ b/src/kernel/kernel_bridge.c
 @@ -61,10 +61,14 @@
@@ -213,7 +213,92 @@ index aac02db..c7d9b75 100644
  extern ptrdiff_t g_xbox_mem_offset;
  
  /* Dispatch table lookup (for function pointer args) */
-@@ -3318,6 +3322,16 @@ static int kernel_drain_dpcs_before(int *ran, uint64_t vbl_due)
+@@ -2908,6 +2912,10 @@ static HANDLE g_vbl_ack_event;
+  * reset, on the 600-vblank line. */
+ static volatile LONG g_vbl_ack_giveups;
+ static volatile LONG g_vbl_ack_late, g_vbl_ack_late_max;
++/* Acks taken between watches (kernel_vblank_ack_thread), and how often it
++ * looks for one there. */
++static volatile LONG g_vbl_ack_unwatched, g_vbl_ack_spun;
++enum { VBL_ACK_IDLE_MS = 4 };
+ /* Vblanks the ISR declined: with the XDK ISR, ones that came while its DPC
+  * had the interrupt masked. */
+ static volatile LONG g_vbl_declined;
+@@ -2927,8 +2935,26 @@ static DWORD WINAPI kernel_vblank_ack_thread(LPVOID unused)
+     for (;;) {
+         long late_ms;
+ 
+-        if (r != XBOX_VBL_ACK_REARMED)
+-            WaitForSingleObject(g_vbl_ack_event, INFINITE);
++        /* Between watches, a look every few ms: an ack that came while no
++         * watch was on (the D3D vblank DPC acking and spinning on PMC_INTR_0
++         * on the timer thread, which is also what would arm the next watch)
++         * is taken here. Without it only the nv2a-ack backstop let the DPC
++         * go, after a second, and the vblank and the picture stalled for
++         * seconds at a time (a Poco, after the overlay's Restart now).
++         * tick_busy down: the bit is an ack, never a vblank the ISR has not
++         * seen (kernel_vblank_raise sets tick_busy before the bits). */
++        while (r != XBOX_VBL_ACK_REARMED
++               && WaitForSingleObject(g_vbl_ack_event, VBL_ACK_IDLE_MS) != WAIT_OBJECT_0) {
++            volatile uint32_t *pcrtc = &BRIDGE_MEM32(XBOX_NV2A_REG_BASE + NV2A_PCRTC_INTR_0);
++            volatile uint32_t *pmc = &BRIDGE_MEM32(XBOX_NV2A_REG_BASE + NV2A_PMC_INTR_0);
++            if (!g_vbl_tick_busy && (*pcrtc & NV2A_PCRTC_INTR_VBLANK)
++                    && (*pmc & NV2A_PMC_INTR_PCRTC)) {
++                InterlockedAnd((volatile LONG *)pcrtc, (LONG)~NV2A_PCRTC_INTR_VBLANK);
++                InterlockedAnd((volatile LONG *)pmc, (LONG)~NV2A_PMC_INTR_PCRTC);
++                InterlockedExchange(&g_vbl_ack_seen_ms, (LONG)(uint32_t)kernel_host_ms());
++                InterlockedIncrement(&g_vbl_ack_unwatched);
++            }
++        }
+         r = xbox_VblankAckWait(
+             &BRIDGE_MEM32(XBOX_NV2A_REG_BASE + NV2A_PCRTC_INTR_0),
+             &BRIDGE_MEM32(XBOX_NV2A_REG_BASE + NV2A_PMC_INTR_0),
+@@ -2948,6 +2974,29 @@ static DWORD WINAPI kernel_vblank_ack_thread(LPVOID unused)
+ 
+ static volatile LONG g_vbl_ack_owned;
+ 
++/* From a lowered guest loop's pass (xbox_SpinWait): the XDK D3D vblank DPC
++ * acks PCRTC_INTR_0 and spins on PMC_INTR_0 (config/spin_waits.json lists
++ * that loop), on the timer thread at DISPATCH with the gate held. On the
++ * console the write clears the bits at once (write-1-to-clear); here the
++ * vblank-ack thread does it, and the DPC waited on that thread. After the
++ * overlay's Restart now on a Poco the vblank-ack thread barely ran on the
++ * timer thread's core and the picture froze. So the loop's pass takes its
++ * own ack, by the vblank-ack thread's rule: tick_busy down, so the PCRTC bit
++ * is an ack and never a vblank the ISR has not seen. */
++void xbox_VblankAckSpin(void)
++{
++    volatile uint32_t *pcrtc = &BRIDGE_MEM32(XBOX_NV2A_REG_BASE + NV2A_PCRTC_INTR_0);
++    volatile uint32_t *pmc = &BRIDGE_MEM32(XBOX_NV2A_REG_BASE + NV2A_PMC_INTR_0);
++
++    if (!g_vbl_ack_owned || g_vbl_tick_busy || !(*pmc & NV2A_PMC_INTR_PCRTC)
++            || !(*pcrtc & NV2A_PCRTC_INTR_VBLANK))
++        return;
++    InterlockedAnd((volatile LONG *)pcrtc, (LONG)~NV2A_PCRTC_INTR_VBLANK);
++    InterlockedAnd((volatile LONG *)pmc, (LONG)~NV2A_PMC_INTR_PCRTC);
++    InterlockedExchange(&g_vbl_ack_seen_ms, (LONG)(uint32_t)kernel_host_ms());
++    InterlockedIncrement(&g_vbl_ack_spun);
++}
++
+ /* The nv2a-ack thread's backstop. While the vblank-ack thread runs it owns
+  * the two vblank bits, and nv2a-ack leaves them, unless no ack has come for
+  * VBL_ACK_LATE_MS with no vblank being raised: then the guest is not acking
+@@ -3052,11 +3101,13 @@ static void kernel_vblank_count(long long now)
+     if (++total % 600 == 0) {
+         fprintf(stderr, "  [NV2A] vblank %llu: last 600 in %lld ms,"
+                 " gap %.1f-%.1f ms, ack give-ups %ld, late acks %ld"
+-                " (max %ld ms), declined %ld\n",
++                " (max %ld ms), unwatched acks %ld, acks in the DPC's loop %ld, declined %ld\n",
+                 total, last_ms ? now - last_ms : 0, gap_min, gap_max,
+                 (long)InterlockedExchange(&g_vbl_ack_giveups, 0),
+                 (long)InterlockedExchange(&g_vbl_ack_late, 0),
+                 (long)InterlockedExchange(&g_vbl_ack_late_max, 0),
++                (long)InterlockedExchange(&g_vbl_ack_unwatched, 0),
++                (long)InterlockedExchange(&g_vbl_ack_spun, 0),
+                 (long)InterlockedExchange(&g_vbl_declined, 0));
+         fflush(stderr);
+         xbox_IrqReport();
+@@ -3318,6 +3369,16 @@ static int kernel_drain_dpcs_before(int *ran, uint64_t vbl_due)
          LeaveCriticalSection(&g_dpc_lock);
          if (d.dpc && d.t_ns)
              dpc_stats_ran(d.t_ns);
@@ -306,10 +391,23 @@ index 66582df..79c35cd 100644
               * the record answers for the later one. Said a few times, since
               * a model reading the earlier one gets the other bytes. */
 diff --git a/src/kernel/kernel_pacing.c b/src/kernel/kernel_pacing.c
-index 150d882..6a1aaf4 100644
+index 150d882..335b33c 100644
 --- a/src/kernel/kernel_pacing.c
 +++ b/src/kernel/kernel_pacing.c
-@@ -691,6 +691,23 @@ void xbox_PacingSetSpinLead(uint64_t ns)
+@@ -575,6 +575,12 @@ void xbox_SpinWait(uint32_t va)
+      * spinning here at DISPATCH takes a posted interrupt, as a CPU would.
+      * At "spin" pacing the macro calls only for that. */
+     xbox_IrqSafePoint();
++    {
++        /* The D3D vblank DPC's own loop takes its ack here (kernel_bridge.c);
++         * any other loop finds nothing to take. */
++        extern void xbox_VblankAckSpin(void);
++        xbox_VblankAckSpin();
++    }
+ #if !defined(_WIN32)
+     /* And a hand-over point for guest_cpus=token (kernel_thread.c): a loop
+      * still waiting lets a thread that wants the guest CPU run now rather
+@@ -691,6 +697,23 @@ void xbox_PacingSetSpinLead(uint64_t ns)
      s_spin_lead_ns = ns;
  }
  
@@ -333,7 +431,7 @@ index 150d882..6a1aaf4 100644
  void xbox_PacingSetSpinLeadAuto(void)
  {
      if (!s_auto_on) {
-@@ -996,8 +1013,8 @@ int xbox_VblankWaitUntil(uint32_t target, uint32_t timeout_ms)
+@@ -996,8 +1019,8 @@ int xbox_VblankWaitUntil(uint32_t target, uint32_t timeout_ms)
           * spin to the edge. An edge already well past (the timer thread is
           * behind, or has not published one) falls back to the condition
           * variable. */
@@ -589,10 +687,23 @@ index 7b9c5e8..07b0a4a 100644
  
  #define XBOX_STACK_BASE     g_xbox_stack_base
 diff --git a/src/overlay/overlay_ui.cpp b/src/overlay/overlay_ui.cpp
-index f51c09d..495a1eb 100644
+index f51c09d..0b938e7 100644
 --- a/src/overlay/overlay_ui.cpp
 +++ b/src/overlay/overlay_ui.cpp
-@@ -202,6 +202,7 @@ static const char *const n_scale[]     = { "1x (640x480)", "1.5x (960x720)", "2x
+@@ -162,6 +162,12 @@ static uint32_t s_trigger_next;
+  * display.frame_pacing is set to it through the settings, as the Display
+  * page does: a Frame pacing switch mid-race from a script. */
+ static char s_pacing_file[512];
++/* RECOMP_OVERLAY=restart_file=<path> (a test hook): when that file appears
++ * it is read ("<setting key> <value>", the value as the setting stores it),
++ * removed, the setting changed through the settings and Restart now taken,
++ * as the pages' rows and the foot row do: the change-and-restart a player
++ * makes, from a script. */
++static char s_restart_file[512];
+ 
+ /* The window's present rate for the graph. */
+ static volatile uint32_t s_presents;
+@@ -202,6 +208,7 @@ static const char *const n_scale[]     = { "1x (640x480)", "1.5x (960x720)", "2x
  static const char *const n_face[]      = { "Xbox layout", "Nintendo layout", NULL };
  static const char *const n_scheme[]    = { "Xbox layout", "PS2 layout", NULL };
  static const char *const n_ui_scale[]  = { "Off", "2x", "4x", NULL };
@@ -600,7 +711,7 @@ index f51c09d..495a1eb 100644
  static const char *const n_texup[]     = { "Off", "FSRCNNX", "NNEDI3", NULL };
  static const char *const n_texup_sc[]  = { "2x", "4x", NULL };
  static const char *const n_glyphs[]    = { "Auto (the controller in use)", "Xbox (original)", "Xbox (modern: LB RB LT RT)", "PlayStation (DualShock 3, 4)", "PlayStation 5 (DualSense)", "Nintendo", "Steam (Deck, Steam Controller)", "Positional (any pad)", "Keyboard", NULL };
-@@ -293,6 +294,7 @@ static constexpr Meta k_meta[XS_COUNT] = {
+@@ -293,6 +300,7 @@ static constexpr Meta k_meta[XS_COUNT] = {
      /* XS_INPUT_TOUCH_OPACITY */ { XS_INPUT_TOUCH_OPACITY, "Touch controls opacity", "How solid the on-screen controls look.", 0.1, FMT_PERCENT, NULL, 0 },
      /* XS_INPUT_TOUCH_SCALE */  { XS_INPUT_TOUCH_SCALE, "Touch controls size", "100% suits a phone or a 6-7 inch handheld held in both hands.", 0.1, FMT_PERCENT, NULL, 0 },
      /* XS_INPUT_TOUCH_AUTO_GAS */ { XS_INPUT_TOUCH_AUTO_GAS, "Touch: accelerate automatically", "In a race the car accelerates by itself; hold BRAKE to slow down or reverse. Touch controls only.", 1, FMT_PLAIN, NULL, 0 },
@@ -608,7 +719,7 @@ index f51c09d..495a1eb 100644
  #endif
  };
  /* One entry per setting, in xbox_settings.h's order: a row shows its own
-@@ -1089,6 +1091,9 @@ static int page_rows(int page, Row *r)
+@@ -1089,6 +1097,9 @@ static int page_rows(int page, Row *r)
          ACT(A_RESET_PAGE, "Reset this page to the defaults");
          break;
      case P_GRAPHICS:
@@ -618,6 +729,40 @@ index f51c09d..495a1eb 100644
          SET(XS_GRAPHICS_RENDER_SCALE); SET(XS_GRAPHICS_ANISO);
          SET(XS_GRAPHICS_AA); SET(XS_GRAPHICS_SHARPEN);
          SET(XS_GRAPHICS_LOD_BIAS);
+@@ -2355,6 +2366,24 @@ void xbox_OverlayPoll(void)
+             xbox_SettingSet(XS_DISPLAY_FRAME_PACING, v);
+         }
+     }
++    if (s_restart_file[0] && (int32_t)(now_ms() - s_trigger_next) >= 0) {
++        FILE *f = fopen(s_restart_file, "r");
++        s_trigger_next = now_ms() + 200;
++        if (f) {
++            char key[64] = { 0 };
++            double v = 0;
++            int got = fscanf(f, "%63s %lf", key, &v), i;
++            fclose(f);
++            unlink(s_restart_file);
++            for (i = 0; got == 2 && i < XS_COUNT; i++)
++                if (!strcmp(xbox_SettingGet((xs_id)i)->key, key)) {
++                    fprintf(stderr, "[OVERLAY] restart_file: %s -> %g, then Restart now\n", key, v);
++                    xbox_SettingSet((xs_id)i, v);
++                    break;
++                }
++            restart_now();
++        }
++    }
+ 
+     /* B or Esc: here and not in the frame, so a window that cannot present
+      * (minimised) still closes. */
+@@ -2442,6 +2471,8 @@ int xbox_OverlaySetWindow(SDL_Window *win)
+         snprintf(s_trigger, sizeof s_trigger, "%s", e + 5);
+     if (e && !strncmp(e, "pacing_file=", 12))
+         snprintf(s_pacing_file, sizeof s_pacing_file, "%s", e + 12);
++    if (e && !strncmp(e, "restart_file=", 13))
++        snprintf(s_restart_file, sizeof s_restart_file, "%s", e + 13);
+     if (e && !strcmp(e, "open"))
+         set_open(true);
+     return 1;
 diff --git a/src/overlay/xbox_settings.c b/src/overlay/xbox_settings.c
 index 5aa02ef..888e701 100644
 --- a/src/overlay/xbox_settings.c
@@ -1208,3 +1353,111 @@ index 4359a2c..7151d52 100644
  
  static inline RecompMmx MMX_ZERO(void) { RecompMmx r; r.q = 0; return r; }
  
+diff --git a/tools/recomp/spin_waits.py b/tools/recomp/spin_waits.py
+index 1763df7..c8955c3 100644
+--- a/tools/recomp/spin_waits.py
++++ b/tools/recomp/spin_waits.py
+@@ -29,9 +29,16 @@ Anything that writes memory, calls, pushes or pops, uses a string, locked,
+ port, cpuid, rdtsc or FPU instruction, changes a register an address uses,
+ or reads no memory at all is not a wait the runtime can sleep through.
+ 
++One exception, per site: "stores": true also takes a mov of a register or an
++immediate to memory, when neither that register nor the address changes in
++the block -- the same store each pass, as an interrupt ack written until the
++status it clears goes down (the XDK D3D vblank DPC's PCRTC_INTR_0 write).
++Sleeping between two of those passes only repeats a write that is already
++there.
++
+ The file (JSON):
+     {"auto": false,
+-     "sites": [{"va": "0x00060475", "note": "..."}],
++     "sites": [{"va": "0x00060475", "note": "...", "stores": false}],
+      "exclude": []}
+ "auto": true lowers every candidate not excluded; false lowers only "sites".
+ A listed site that fails the matcher in any body that contains it is an
+@@ -67,9 +74,10 @@ def _parse_va(v):
+ class SpinWaitConfig:
+     """The parsed spin-wait file."""
+ 
+-    def __init__(self, auto=False, sites=(), exclude=(), notes=None):
++    def __init__(self, auto=False, sites=(), exclude=(), notes=None, stores=()):
+         self.auto = bool(auto)
+         self.sites = set(sites)
++        self.stores = set(stores)
+         self.exclude = set(exclude)
+         self.notes = dict(notes or {})
+ 
+@@ -82,15 +90,17 @@ class SpinWaitConfig:
+         unknown = set(doc) - {"auto", "sites", "exclude", "about"}
+         if unknown:
+             raise ValueError(f"{path}: unknown keys {sorted(unknown)}")
+-        sites, notes = set(), {}
++        sites, notes, stores = set(), {}, set()
+         for s in doc.get("sites", []):
+             va = _parse_va(s["va"] if isinstance(s, dict) else s)
+             sites.add(va)
+             if isinstance(s, dict) and s.get("note"):
+                 notes[va] = s["note"]
++            if isinstance(s, dict) and s.get("stores"):
++                stores.add(va)
+         exclude = {_parse_va(s["va"] if isinstance(s, dict) else s)
+                    for s in doc.get("exclude", [])}
+-        return cls(doc.get("auto", False), sites, exclude, notes)
++        return cls(doc.get("auto", False), sites, exclude, notes, stores)
+ 
+     def wants(self, va):
+         if va in self.exclude:
+@@ -98,10 +108,11 @@ class SpinWaitConfig:
+         return self.auto or va in self.sites
+ 
+ 
+-def match(bb):
++def match(bb, stores=False):
+     """(True, None) when the block is a spin-wait candidate, else
+     (False, reason). A block that is not a self-loop gives (False, None):
+-    it is not a loop at all, so it is not reported."""
++    it is not a loop at all, so it is not reported. stores: the site's
++    "stores" (see the top)."""
+     insns = bb.instructions
+     if not insns:
+         return False, None
+@@ -113,7 +124,7 @@ def match(bb):
+     body = insns[:-1]
+     if not body:
+         return False, "no instruction before the branch"
+-    addr_regs, loaded, written = set(), set(), set()
++    addr_regs, loaded, written, store_srcs = set(), set(), set(), set()
+     reads_memory = False
+ 
+     for insn in body:
+@@ -136,6 +147,11 @@ def match(bb):
+             if not (regs & loaded):
+                 return False, f"{m} at 0x{insn.address:08X} reads no memory"
+             continue
++        if (stores and m == "mov" and len(ops) == 2 and ops[0].type == "mem"
++                and ops[1].type in ("reg", "imm")):
++            if ops[1].type == "reg":
++                store_srcs.add(_canon(ops[1].reg))
++            continue
+         if m in _LOADS:
+             if len(ops) != 2 or ops[0].type != "reg":
+                 return False, f"{m} at 0x{insn.address:08X} writes memory"
+@@ -152,6 +168,9 @@ def match(bb):
+     if written & addr_regs:
+         return False, ("writes an address register ("
+                        + ", ".join(sorted(written & addr_regs)) + ")")
++    if written & store_srcs:
++        return False, ("changes a register it stores ("
++                       + ", ".join(sorted(written & store_srcs)) + ")")
+     if not reads_memory:
+         return False, "reads no memory"
+     return True, None
+@@ -190,7 +209,7 @@ class SpinWaitReport:
+     def consider(self, func_addr, bb, stmts):
+         """Lower bb's back edge if it is a wanted candidate. Returns the
+         statements to emit."""
+-        ok, why = match(bb)
++        ok, why = match(bb, bb.start in self.config.stores)
+         if not ok and why is None:
+             return stmts
+         va = bb.start

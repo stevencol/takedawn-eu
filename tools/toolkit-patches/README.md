@@ -38,11 +38,18 @@ Dimensity 1080:
 - **The APU's voice records translated once** (`apu_vp.c`), dropped when the
   physical map moves (`xbox_PhysicalMapGen`): the translations were a quarter
   of the APU thread, now about half that.
-- **A freeze after Apply and restart** (`kernel_bridge.c`): a vblank posted
-  for a title thread that let go of the gate stayed posted while the D3D
-  vblank DPC spun on the timer thread, waiting for an ack the vblank-ack
-  thread would not give with the vblank undelivered. Posted interrupts now
-  run before each DPC, as a pending interrupt does on the console.
+- **A freeze after Apply and restart** (`kernel_bridge.c`, `kernel_pacing.c`,
+  `tools/recomp/spin_waits.py`): the XDK D3D vblank DPC acks PCRTC_INTR_0 and
+  spins on PMC_INTR_0 on the timer thread until the vblank-ack thread clears
+  it; in a game started by Restart now that thread barely ran on the timer
+  thread's core, and the picture froze. The DPC's loop is now a spin-wait
+  site (config/spin_waits.json, with the new per-site `"stores": true` for
+  its repeated ack write) whose pass takes its own ack, as the console's
+  write-1-to-clear register does. Also: posted interrupts run before each
+  DPC, and the vblank-ack thread looks for an unwatched ack every 4 ms.
+  Tested with five scripted change-and-restart cycles on a Poco.
+- **A test hook** (`overlay_ui.cpp`): `RECOMP_OVERLAY=restart_file=<path>`
+  sets one setting from the file and takes Restart now, for a script.
 - **Graphics > Quality** (`xbox_settings.c`, `overlay_ui.cpp`): Basic,
   Standard, High and Pro set the graphics rows at once.
 - The black screen on returning to the app: no surface is made while the
