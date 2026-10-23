@@ -92,6 +92,22 @@ if((NOT WIN32 OR BO3_WIN_VULKAN) AND EXISTS "${XBOXRECOMP_DIR}/src/overlay/overl
     endif()
 endif()
 
+# Profile-guided optimisation (clang), for the game and the toolkit alike:
+# -DBO3_PGO_GENERATE=ON builds the counting kind, which writes
+# <the app's files>/pgo.profraw every 30 s while it runs (main.c, Android);
+# llvm-profdata merges those into a .profdata, and -DBO3_PGO_USE=<file>
+# builds with it (tools/perf/pgo.md).
+option(BO3_PGO_GENERATE "Build with clang's profile counters (-fprofile-generate)" OFF)
+set(BO3_PGO_USE "" CACHE FILEPATH "A .profdata to optimise with (-fprofile-use)")
+if(BO3_PGO_GENERATE)
+    add_compile_options(-fprofile-generate)
+    add_link_options(-fprofile-generate)
+    add_compile_definitions(BO3_PGO_GENERATE)
+elseif(BO3_PGO_USE)
+    add_compile_options("-fprofile-use=${BO3_PGO_USE}"
+        -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date -Wno-backend-plugin)
+endif()
+
 add_subdirectory(${XBOXRECOMP_DIR} ${CMAKE_BINARY_DIR}/xboxrecomp)
 
 add_subdirectory(src/game)
