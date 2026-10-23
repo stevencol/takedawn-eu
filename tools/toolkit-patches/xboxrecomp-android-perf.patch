@@ -100,7 +100,7 @@ index c13aabc..63febe5 100644
  
  /* ============================================================
 diff --git a/src/d3d/nv2a_pb_vulkan.c b/src/d3d/nv2a_pb_vulkan.c
-index 8f06338..1c0a73a 100644
+index 8f06338..2d63383 100644
 --- a/src/d3d/nv2a_pb_vulkan.c
 +++ b/src/d3d/nv2a_pb_vulkan.c
 @@ -644,11 +644,19 @@ static VkDescriptorSet s_tset_last;      /* the last texture set, this frame */
@@ -137,7 +137,7 @@ index 8f06338..1c0a73a 100644
          if (!flush(1, FL_RING))   /* resets every ring */
              return NULL;          /* or drawing has stopped */
          at = 0;
-@@ -7718,11 +7729,24 @@ static int init(void)
+@@ -7718,11 +7729,34 @@ static int init(void)
  
      /* Rings, per frame: vertices as Metal's (16 MB), indices for the
       * largest batch the walker accepts, uniforms for some thousands of
@@ -156,14 +156,24 @@ index 8f06338..1c0a73a 100644
      s_ring_size[RING_UB] = 16u << 20;
      s_ring_size[RING_UP] = 48u << 20;
 +#if defined(__ANDROID__)
++    /* The uploads' 19-24 MB frames are loading screens'; a race or a menu
++     * took 7 at most, so a loading screen flushes a few times more and
++     * nothing else changes. One upload must still fit whole (ring_alloc
++     * refuses what cannot): the largest is a 640x480 half-float target
++     * seeded at the render scale (8 bytes a pixel: 9.8 MB at 2x), so the
++     * ring is that much when the scale asks for more than 8 MB. */
 +    s_ring_size[RING_VB] = 12u << 20;
-+    s_ring_size[RING_UB] = 6u << 20;
-+    s_ring_size[RING_UP] = 24u << 20;
++    s_ring_size[RING_UB] = 4u << 20;
++    {
++        VkDeviceSize x2 = nv2a_host_render_scale_x2();
++        VkDeviceSize seed = (VkDeviceSize)640u * 480u * 8u * x2 * x2 / 4u + (1u << 20);
++        s_ring_size[RING_UP] = seed > (8u << 20) ? seed : (8u << 20);
++    }
 +#endif
      {
          static const VkBufferUsageFlags use[RING_N] = {
              VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-@@ -8303,6 +8327,20 @@ static void vk_on_flip(uint32_t surface_offset, uint32_t pitch)
+@@ -8303,6 +8337,20 @@ static void vk_on_flip(uint32_t surface_offset, uint32_t pitch)
                  (unsigned long long)s_frame_waits,
                  s_frame_waits ? (double)s_frame_wait_ns / (double)s_frame_waits / 1e6 : 0.0);
      }

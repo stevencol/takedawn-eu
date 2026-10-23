@@ -3711,6 +3711,10 @@ int main(int argc, char **argv)
     env_default("RECOMP_PRESENT_FILTER", "linear");
     env_default("RECOMP_GFX_SHARPEN", "0.30");
     env_default("RECOMP_GFX_UI_SCALE", "2x");
+    /* The title's 3D at the screen's own shape (about 19.5:9 on a phone),
+     * not 16:9 between black bars: the HUD goes to the edges, nothing is
+     * stretched (the ultrawide patch, config/patches.json). */
+    env_default("RECOMP_DISPLAY_ULTRAWIDE", "window");
     /* FIFO, the one mode every Android device has. MAILBOX had fewer slow
      * frames on the Retroid Pocket 5 (BO-85: 1.5 % against 16 % in a 2x
      * race), but on a Xiaomi (HyperOS, Snapdragon 8 Elite) the compositor
