@@ -41,7 +41,9 @@ Dimensity 1080:
 - The black screen on returning to the app: no surface is made while the
   window is minimised or has no native window (`fb_present_vulkan.c`).
 
-Results (frames over 20 ms; the hottest CPU zone): the Poco from 55 fps,
-14.9 % and 75 °C to 60 fps, 0.9 % and 67 °C; the A34 from 34.6 fps and
-96 % to 57-58 fps and 5-9 %. The game's memory on the Poco from 294 to
-255 MB.
+Results with these and the game's own changes (FIFO, no spin, PGO;
+frames over 20 ms; the hottest CPU zone): the Poco from 55 fps, 14.9 %
+and 75 °C to 60 fps, 1-3 % and 61-67 °C, at 18 % less CPU with the
+profile; the A34 from 34.6 fps and 96 % to 59 fps and 4-5 %, the chip at
+37-40 °C. The game's memory: the Poco from 294 to 255 MB, the A34 from 536
+to 432 MB.
