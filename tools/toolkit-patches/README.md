@@ -54,6 +54,12 @@ Dimensity 1080:
   Standard, High and Pro set the graphics rows at once.
 - The black screen on returning to the app: no surface is made while the
   window is minimised or has no native window (`fb_present_vulkan.c`).
+- **A stretched picture after a wake or an unlock** (`fb_present_vulkan.c`):
+  SDL saw the window's new size before the surface had it, so the swapchain
+  was made at the old one (2265x954 with the system bars) and never again;
+  the compositor stretched it to 2340x1080, 9 % taller, with garbage at the
+  picture's right edge. The surface's own size is now checked twice a
+  second and the swapchain made again when it moved.
 
 Results with these and the game's own changes (FIFO, no spin, PGO;
 frames over 20 ms; the hottest CPU zone): the Poco from 55 fps, 14.9 %

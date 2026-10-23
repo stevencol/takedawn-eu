@@ -1086,10 +1086,24 @@ index 4e62d22..98ac468 100644
      if (!ph_load())
          return;
 diff --git a/src/video/fb_present_vulkan.c b/src/video/fb_present_vulkan.c
-index 08ddf78..24b334b 100644
+index 08ddf78..9f8ff3d 100644
 --- a/src/video/fb_present_vulkan.c
 +++ b/src/video/fb_present_vulkan.c
-@@ -1514,6 +1514,19 @@ static int resurface(SDL_Window *win)
+@@ -123,6 +123,13 @@ static int              s_recreate;
+  * for the "has the window changed" test. */
+ #if defined(__ANDROID__)
+ static uint32_t s_and_w, s_and_h;
++/* The surface's own size when the swapchain was made. SDL's window size can
++ * change a moment before the surface's does (the system bars hidden again
++ * after a wake or an unlock): the swapchain is then made at the old size,
++ * the window test sees nothing more to do, and the compositor stretches it
++ * (a Galaxy A34: 2265x954 shown at 2340x1080, 9 % taller, with garbage at
++ * the picture's right edge). android_extent_moved looks again. */
++static VkExtent2D s_and_cur;
+ #define FBV_SIZE_CHANGED(dw, dh) ((uint32_t)(dw) != s_and_w || (uint32_t)(dh) != s_and_h)
+ #else
+ #define FBV_SIZE_CHANGED(dw, dh) \
+@@ -1514,6 +1521,19 @@ static int resurface(SDL_Window *win)
              return 0;
          tried_ns = now;
      }
@@ -1109,9 +1123,11 @@ index 08ddf78..24b334b 100644
  #endif
      queue_idle();
      pthread_mutex_lock(&s_sc_mu);
-@@ -1862,8 +1875,15 @@ static int make_swapchain(SDL_Window *win)
+@@ -1861,9 +1881,17 @@ static int make_swapchain(SDL_Window *win)
+ #if defined(__ANDROID__)
      s_and_w = (uint32_t)dw;
      s_and_h = (uint32_t)dh;
++    s_and_cur = caps.currentExtent;
      {
 +        /* Unset: the rows the title is drawn at (480 at render.scale), not
 +         * the panel's: the picture has no more detail than that, and the
@@ -1126,6 +1142,31 @@ index 08ddf78..24b334b 100644
          if (rows >= 240 && rows < s_sc_ext.height) {
              s_sc_ext.width = ((s_sc_ext.width * rows / s_sc_ext.height) + 1u) & ~1u;
              s_sc_ext.height = rows;
+@@ -3224,6 +3252,24 @@ int fbv_present(SDL_Window *win, int k, uint32_t fw, uint32_t fh, int filter,
+ #endif
+     if (s_sc && s_hdr_offered && hdr_wanted() != s_hdr_sc)
+         s_recreate = 1;          /* BO-110: HDR switched in the settings */
++#if defined(__ANDROID__)
++    {
++        /* Twice a second: has the surface's size moved since the swapchain
++         * was made (s_and_cur says why)? */
++        static unsigned n;
++        VkSurfaceCapabilitiesKHR cc;
++        if (s_sc && ++n % 30 == 0 && s_and_cur.width != 0xFFFFFFFFu
++                && vkGetPhysicalDeviceSurfaceCapabilitiesKHR(C->phys, C->surface, &cc) == VK_SUCCESS
++                && cc.currentExtent.width != 0xFFFFFFFFu && cc.currentExtent.width
++                && (cc.currentExtent.width != s_and_cur.width
++                    || cc.currentExtent.height != s_and_cur.height)) {
++            fprintf(stderr, LOGP "surface now %ux%u, swapchain made for %ux%u: made again\n",
++                    cc.currentExtent.width, cc.currentExtent.height, s_and_cur.width,
++                    s_and_cur.height);
++            s_recreate = 1;
++        }
++    }
++#endif
+     if (!s_sc || s_recreate || FBV_SIZE_CHANGED(dw, dh)) {
+         if (!make_swapchain(win))
+             return 0;
 diff --git a/templates/runtime/recomp_cpu_tls.h b/templates/runtime/recomp_cpu_tls.h
 new file mode 100644
 index 0000000..80cffa0
