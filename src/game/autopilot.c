@@ -56,7 +56,9 @@
 #include "platform/recomp_patch.h"
 #include "recomp_types.h"
 
+#ifndef RECOMP_CPU_STRUCT
 extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esi, g_esp;
+#endif
 extern ptrdiff_t g_xbox_mem_offset;
 extern void sub_00179760(void);
 

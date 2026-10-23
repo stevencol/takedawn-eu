@@ -38,7 +38,9 @@
 #include "platform/recomp_patch.h"
 #include "recomp_types.h"
 
+#ifndef RECOMP_CPU_STRUCT
 extern RECOMP_TLS uint32_t g_ebx, g_esi;
+#endif
 extern ptrdiff_t g_xbox_mem_offset;
 
 #define M8(va)  (*(uint8_t *)((uintptr_t)g_xbox_mem_offset + (uint32_t)(va)))

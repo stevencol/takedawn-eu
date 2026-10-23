@@ -1,0 +1,890 @@
+diff --git a/src/apu/apu_core.c b/src/apu/apu_core.c
+index 45c3334..1400069 100644
+--- a/src/apu/apu_core.c
++++ b/src/apu/apu_core.c
+@@ -257,8 +257,10 @@ extern void xbox_IrqNoteUngated(int line);
+ #else
+ #  define APU_TLS __thread
+ #endif
++#ifndef RECOMP_CPU_STRUCT
+ extern APU_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi;
+ extern APU_TLS uint32_t g_fs_base;
++#endif
+ 
+ /* Call the connected service routine while the line is up, from the frame
+  * thread, the way the OHCI model delivers USB interrupts (ohci_call_isr):
+diff --git a/src/d3d/nv2a_pb_vulkan.c b/src/d3d/nv2a_pb_vulkan.c
+index 8f06338..1c0a73a 100644
+--- a/src/d3d/nv2a_pb_vulkan.c
++++ b/src/d3d/nv2a_pb_vulkan.c
+@@ -644,11 +644,19 @@ static VkDescriptorSet s_tset_last;      /* the last texture set, this frame */
+ static VkImageView     s_tset_views[4];
+ static VkSampler       s_tset_smp[4];
+ 
++/* Each ring's use: the most a frame took, the largest single request, and
++ * the flushes it forced by filling up (the "[vulkan] rings" line). */
++static VkDeviceSize s_ring_peak[RING_N], s_ring_big[RING_N];
++static uint64_t     s_ring_full[RING_N];
++
+ static void rings_reset(void)
+ {
+     int k;
+-    for (k = 0; k < RING_N; k++)
++    for (k = 0; k < RING_N; k++) {
++        if (s_ring_pos[k] > s_ring_peak[k])
++            s_ring_peak[k] = s_ring_pos[k];
+         s_ring_pos[k] = 0;
++    }
+     memset(s_umemo.valid, 0, sizeof s_umemo.valid);
+ }
+ 
+@@ -839,9 +847,12 @@ static int flush(int wait, int why)
+ static void *ring_alloc(int k, VkDeviceSize bytes, VkDeviceSize align, VkDeviceSize *off)
+ {
+     VkDeviceSize at = (s_ring_pos[k] + align - 1) & ~(align - 1);
++    if (bytes > s_ring_big[k])
++        s_ring_big[k] = bytes;
+     if (bytes > s_ring_size[k])
+         return NULL;
+     if (at + bytes > s_ring_size[k]) {
++        s_ring_full[k]++;
+         if (!flush(1, FL_RING))   /* resets every ring */
+             return NULL;          /* or drawing has stopped */
+         at = 0;
+@@ -7718,11 +7729,24 @@ static int init(void)
+ 
+     /* Rings, per frame: vertices as Metal's (16 MB), indices for the
+      * largest batch the walker accepts, uniforms for some thousands of
+-     * draws, staging for a frame's uploads. */
++     * draws, staging for a frame's uploads.
++     *
++     * Android: smaller, from what a frame took (the "[vulkan] rings" line,
++     * a 2-minute AI race on a Galaxy A34: vertices 9.1 MB, indices 2.8,
++     * uniforms 3.1, uploads 19.3, the largest single upload 2.6 MB, never
++     * full). A phone's driver commits all of a host-visible buffer: these
++     * rings were 172 MB of the game's 536. A fuller frame than these only
++     * flushes and starts the ring over (s_ring_full); the indices keep the
++     * largest batch's room. */
+     s_ring_size[RING_VB] = 16u << 20;
+     s_ring_size[RING_IB] = (VkDeviceSize)NV_MAX_INDICES * 3u * 4u;
+     s_ring_size[RING_UB] = 16u << 20;
+     s_ring_size[RING_UP] = 48u << 20;
++#if defined(__ANDROID__)
++    s_ring_size[RING_VB] = 12u << 20;
++    s_ring_size[RING_UB] = 6u << 20;
++    s_ring_size[RING_UP] = 24u << 20;
++#endif
+     {
+         static const VkBufferUsageFlags use[RING_N] = {
+             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+@@ -8303,6 +8327,20 @@ static void vk_on_flip(uint32_t surface_offset, uint32_t pitch)
+                 (unsigned long long)s_frame_waits,
+                 s_frame_waits ? (double)s_frame_wait_ns / (double)s_frame_waits / 1e6 : 0.0);
+     }
++    if ((s_presents % 1800) == 0) {
++        static const char *const nm[RING_N] = { "vertices", "indices", "uniforms", "uploads" };
++        char b[320];
++        size_t at = 0;
++        int k;
++        for (k = 0; k < RING_N && at < sizeof b; k++)
++            at += (size_t)snprintf(b + at, sizeof b - at, "%s%s %.1f of %.1f MB (largest %.2f, %llu full)",
++                                   k ? ", " : "", nm[k], (double)s_ring_peak[k] / 1048576.0,
++                                   (double)s_ring_size[k] / 1048576.0,
++                                   (double)s_ring_big[k] / 1048576.0,
++                                   (unsigned long long)s_ring_full[k]);
++        fprintf(stderr, LOGP "rings at present #%llu, a frame's most: %s; x%d frames\n",
++                (unsigned long long)s_presents, b, s_frames);
++    }
+     if (prof) {
+         s_pa.flip += now_ns() - t_flip0;
+         if (++s_pa.n == 300) {
+diff --git a/src/kernel/kernel_bridge.c b/src/kernel/kernel_bridge.c
+index aac02db..1a9373e 100644
+--- a/src/kernel/kernel_bridge.c
++++ b/src/kernel/kernel_bridge.c
+@@ -61,10 +61,14 @@
+  * xbox_memory_layout.h and must match the definitions there -- a plain extern
+  * here binds to the TLS template rather than the calling thread's copy, which
+  * reads as every register being zero. */
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
+ extern RECOMP_TLS uint32_t g_ebx, g_esi, g_edi;
++#endif
+ extern uint32_t g_xbox_code_lo, g_xbox_code_hi;
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_seh_ebp;
++#endif
+ extern ptrdiff_t g_xbox_mem_offset;
+ 
+ /* Dispatch table lookup (for function pointer args) */
+diff --git a/src/kernel/kernel_hal.c b/src/kernel/kernel_hal.c
+index e2c1f0c..e2eee6b 100644
+--- a/src/kernel/kernel_hal.c
++++ b/src/kernel/kernel_hal.c
+@@ -56,7 +56,9 @@ static XBOX_THREAD_LOCAL KIRQL g_current_irql = PASSIVE_LEVEL;
+  * critical section, blocked against the thread that held it, and the title
+  * froze with IRQL raised on the blocked thread. Every change of
+  * g_current_irql is published here. */
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_fs_base;
++#endif
+ /* The offset lifted code adds to every guest address; host code that reads
+  * guest memory on its behalf uses the same one. */
+ extern ptrdiff_t g_xbox_mem_offset;
+@@ -137,7 +139,9 @@ static struct {
+     void *ra;
+     uint32_t guest_ra, guest_esp;   /* the host ra only ever names the bridge */
+ } s_holders[IRQL_HOLDERS];
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_esp;
++#endif
+ 
+ static void irql_holder_add(void *ra)
+ {
+@@ -413,6 +417,7 @@ static void irq_note_wait(int line, uint64_t posted_ns)
+  * these across a call or an instruction is put back. g_fs_base stays: the
+  * routine runs on the holder's TIB, as on the console's one CPU (a device
+  * model's thread as holder: see irq_release_point). */
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_ebx, g_esi, g_edi, g_ebp;
+ extern RECOMP_TLS uint32_t g_seh_ebp, g_eflags;
+ extern RECOMP_TLS int g_df, g_fp_top, g_fp_cmp;
+@@ -422,6 +427,7 @@ extern RECOMP_TLS RecompXmm g_xmm0, g_xmm1, g_xmm2, g_xmm3;
+ extern RECOMP_TLS RecompXmm g_xmm4, g_xmm5, g_xmm6, g_xmm7;
+ extern RECOMP_TLS RecompMmx g_mm0, g_mm1, g_mm2, g_mm3;
+ extern RECOMP_TLS RecompMmx g_mm4, g_mm5, g_mm6, g_mm7;
++#endif
+ 
+ typedef struct {
+     uint32_t eax, ecx, edx, ebx, esi, edi, ebp, esp, seh_ebp, eflags;
+diff --git a/src/kernel/kernel_pacing.c b/src/kernel/kernel_pacing.c
+index 150d882..6a1aaf4 100644
+--- a/src/kernel/kernel_pacing.c
++++ b/src/kernel/kernel_pacing.c
+@@ -691,6 +691,23 @@ void xbox_PacingSetSpinLead(uint64_t ns)
+     s_spin_lead_ns = ns;
+ }
+ 
++/* A cap on the lead whatever the power mode sets (Android's thermal
++ * headroom, android_perf.c); -1 none. Apart from s_spin_lead_ns so that
++ * Auto's controller and the overlay keep their own value. */
++static volatile int64_t s_thermal_cap_ns = -1;
++
++void xbox_PacingSetThermalLeadCap(int64_t ns)
++{
++    s_thermal_cap_ns = ns;
++}
++
++static uint64_t spin_lead_now(void)
++{
++    int64_t cap = s_thermal_cap_ns;
++    uint64_t lead = s_spin_lead_ns;
++    return cap >= 0 && lead > (uint64_t)cap ? (uint64_t)cap : lead;
++}
++
+ void xbox_PacingSetSpinLeadAuto(void)
+ {
+     if (!s_auto_on) {
+@@ -996,8 +1013,8 @@ int xbox_VblankWaitUntil(uint32_t target, uint32_t timeout_ms)
+          * spin to the edge. An edge already well past (the timer thread is
+          * behind, or has not published one) falls back to the condition
+          * variable. */
+-        if (s_spin_lead_ns && xbox_VblankCount() + 1 == target) {
+-            uint64_t due = (uint64_t)s_vbl_next_ns, lead = s_spin_lead_ns;
++        if (spin_lead_now() && xbox_VblankCount() + 1 == target) {
++            uint64_t due = (uint64_t)s_vbl_next_ns, lead = spin_lead_now();
+             if (due + SPIN_LATE_NS > now) {
+                 LeaveCriticalSection(&s_vbl_lock);
+                 if (due > now + lead) {
+diff --git a/src/kernel/kernel_pacing.h b/src/kernel/kernel_pacing.h
+index 63a2526..5dad4c4 100644
+--- a/src/kernel/kernel_pacing.h
++++ b/src/kernel/kernel_pacing.h
+@@ -87,6 +87,9 @@ void xbox_VblankSignal(void);
+  * thread tells it when the next vblank is due, before counting the one it
+  * raises. */
+ void xbox_PacingSetSpinLead(uint64_t ns);
++/* A cap on the lead in every mode, Auto's included (ns; -1 none): Android's
++ * thermal headroom (android_perf.c) sets it as the phone nears throttling. */
++void xbox_PacingSetThermalLeadCap(int64_t ns);
+ /* Power mode Auto (BO-175, power_auto.h): the lead is picked at run time
+  * from the holds; xbox_PacingSetSpinLead turns it off again. Only how the
+  * hold waits changes, never which vblank the flip leaves at. */
+diff --git a/src/kernel/kernel_prof.c b/src/kernel/kernel_prof.c
+index 1ccf8af..28d3167 100644
+--- a/src/kernel/kernel_prof.c
++++ b/src/kernel/kernel_prof.c
+@@ -117,7 +117,9 @@ long long xbox_ProfNowUs(void)
+  * rough call stack: a stale word can show up). Identical samples are
+  * tallied; the top few are printed with the table. */
+ extern ptrdiff_t g_xbox_mem_offset;
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_esp;
++#endif
+ 
+ #define SAMPLE_AFTER_US 20000
+ #define GUEST_CODE_LO   0x00011000u
+diff --git a/src/kernel/kernel_rtl.c b/src/kernel/kernel_rtl.c
+index 0dd388c..0f83a85 100644
+--- a/src/kernel/kernel_rtl.c
++++ b/src/kernel/kernel_rtl.c
+@@ -319,7 +319,9 @@ static CRITICAL_SECTION* xbox_cs_shadow(PRTL_CRITICAL_SECTION guest)
+  * pointer does not. */
+ extern ptrdiff_t g_xbox_mem_offset;
+ 
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_esp;
++#endif
+ extern uint32_t g_xbox_code_lo, g_xbox_code_hi;
+ 
+ /* A guest backtrace, printed where the guest is standing.
+diff --git a/src/kernel/kernel_thread.c b/src/kernel/kernel_thread.c
+index 8af83a5..fa9d61a 100644
+--- a/src/kernel/kernel_thread.c
++++ b/src/kernel/kernel_thread.c
+@@ -585,12 +585,10 @@ DWORD_PTR xbox_GuestCpuMask(void)
+      * core, a fraction of the speed. The fastest core is left to the
+      * executor, the heavier thread (kernel_bridge.c pins it there; measured
+      * on a Snapdragon 865: 60 % of a core against the guest's 29 %); the
+-     * guest's threads take a core of the next kind, or the fastest when
+-     * there is only one kind (android_host.h). */
++     * guest's threads take another core of that kind when there is one, else
++     * a core of the next kind (android_host.h). */
+     {
+-        int fast = recomp_android_cpu_rank(1);
+-        if (fast < 0)
+-            fast = recomp_android_fast_cpu();
++        int fast = recomp_android_guest_cpu();
+         if (fast >= 0 && fast < (int)(8 * sizeof proc) && (proc & ((DWORD_PTR)1 << fast)))
+             return (DWORD_PTR)1 << fast;
+     }
+diff --git a/src/kernel/recomp_trace.c b/src/kernel/recomp_trace.c
+index 4630638..95e8e2b 100644
+--- a/src/kernel/recomp_trace.c
++++ b/src/kernel/recomp_trace.c
+@@ -19,8 +19,10 @@
+ 
+ #include "xbox_memory_layout.h"
+ 
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
+ extern RECOMP_TLS uint32_t g_ebx, g_esi, g_edi;
++#endif
+ 
+ /* A run that recurses produces trace lines without limit, and the useful
+  * window is rarely the first few thousand. The budget stops a diagnostic from
+diff --git a/src/kernel/xbox_crash.c b/src/kernel/xbox_crash.c
+index 031c239..c8844d4 100644
+--- a/src/kernel/xbox_crash.c
++++ b/src/kernel/xbox_crash.c
+@@ -52,8 +52,10 @@
+ #endif
+ #endif
+ 
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_ebx, g_esp, g_esi, g_edi, g_ebp;
+ extern RECOMP_TLS uint32_t g_seh_ebp;
++#endif
+ extern volatile uint32_t g_icall_trace[16];
+ extern volatile uint32_t g_icall_trace_idx;
+ extern volatile uint64_t g_icall_count;
+diff --git a/src/kernel/xbox_memory_layout.c b/src/kernel/xbox_memory_layout.c
+index 2fe5ce6..232a321 100644
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -2140,7 +2140,18 @@ uint32_t g_xbox_code_hi = 0;
+ /* Global registers for recompiled code (via recomp_types.h) */
+ /* Each guest thread's TIB. The first thread uses the one the loader built;
+  * a spawned thread gets its own from xbox_AllocThreadTib(). */
++#ifndef RECOMP_CPU_STRUCT
+ RECOMP_TLS uint32_t g_fs_base = XBOX_TIB_MAIN;
++#else
++/* Android: every register in one thread-local (recomp_cpu_tls.h), with the
++ * starting values the separate ones below have. */
++RECOMP_TLS RecompCpu g_recomp_cpu = {
++    .r_eflags = 0x00000202u,
++    .r_fs_base = XBOX_TIB_MAIN,
++    .r_fp_control_word = 0x037Fu,
++    .r_fp_cc = 0x4000,
++};
++#endif
+ 
+ /* The shape of the TLS block the loader built, so a new thread can be
+  * given one just like it: where the initialised image data starts, how
+@@ -2148,8 +2159,10 @@ RECOMP_TLS uint32_t g_fs_base = XBOX_TIB_MAIN;
+  * at is. Zero total means the image had no TLS directory. */
+ static uint32_t g_tls_template_va, g_tls_total, g_tls_thread_size = 64;
+ 
++#ifndef RECOMP_CPU_STRUCT
+ RECOMP_TLS uint32_t g_eax = 0, g_ecx = 0, g_edx = 0, g_esp = 0;
+ RECOMP_TLS uint32_t g_ebx = 0, g_esi = 0, g_edi = 0;
++#endif
+ 
+ #ifdef RECOMP_ABI_CHECK
+ /* Report a lifted function that returned without restoring ebx/esi/edi.
+@@ -2211,9 +2224,11 @@ void recomp_abi_violation_log(uint32_t va, uint32_t ebx0, uint32_t esi0,
+ #endif
+ 
+ /* SEH frame pointer bridge (see recomp_types.h for explanation) */
++#ifndef RECOMP_CPU_STRUCT
+ RECOMP_TLS uint32_t g_seh_ebp = 0;
+ RECOMP_TLS double g_fp_stack[8];
+ RECOMP_TLS int g_fp_top = 0;
++#endif
+ 
+ /* Set once at startup. The generated code reads it at the ret of every
+  * --force-return function, so it has to be cheap and it has to default to
+@@ -2222,13 +2237,17 @@ RECOMP_TLS int g_fp_top = 0;
+ int g_force_return = 0;
+ /* x87 control and status. The reset default masks every exception and
+  * rounds to nearest, which is what the CRT expects before _control87. */
++#ifndef RECOMP_CPU_STRUCT
+ RECOMP_TLS uint16_t g_fp_control_word = 0x037Fu;
+ RECOMP_TLS int g_fp_cmp = 0;
+ RECOMP_TLS uint16_t g_fp_cc = 0x4000;
++#endif
+ 
+ /* Defined below, with the other guest registers. */
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_ebp;
+ extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_ebx, g_esi, g_edi;
++#endif
+ 
+ /* ---- non-local jumps ---------------------------------------------------
+  *
+@@ -3059,13 +3078,17 @@ void xbox_WatchdogStart(void)
+ }
+ 
+ /* SSE. 128 bits of architectural state, per-thread like the rest. */
++#ifndef RECOMP_CPU_STRUCT
+ RECOMP_TLS RecompMmx g_mm0, g_mm1, g_mm2, g_mm3;
+ RECOMP_TLS RecompMmx g_mm4, g_mm5, g_mm6, g_mm7;
+ RECOMP_TLS RecompXmm g_xmm0, g_xmm1, g_xmm2, g_xmm3;
+ RECOMP_TLS RecompXmm g_xmm4, g_xmm5, g_xmm6, g_xmm7;
++#endif
+ /* Last frame established by `mov ebp, esp`. Read by frameless functions
+  * that address their caller's frame through ebp. */
++#ifndef RECOMP_CPU_STRUCT
+ RECOMP_TLS uint32_t g_ebp = 0;
++#endif
+ 
+ /* EFLAGS.DF. Zero means the string instructions walk forwards, which is the
+  * ABI's resting state and what almost every one of them does -- so this is
+@@ -3074,11 +3097,15 @@ RECOMP_TLS uint32_t g_ebp = 0;
+  * `std; repne scasb`, and memmove goes backwards when its regions overlap the
+  * wrong way. Thread-local, because `std` and the `cld` that undoes it can land
+  * in different lifted bodies of the same guest routine. */
++#ifndef RECOMP_CPU_STRUCT
+ RECOMP_TLS int g_df = 0;
++#endif
+ 
+ /* The last EFLAGS image popfd loaded (see recomp_types.h). Bit 1 is always
+  * set and IF is on, as in any guest thread the kernel schedules. */
++#ifndef RECOMP_CPU_STRUCT
+ RECOMP_TLS uint32_t g_eflags = 0x00000202u;
++#endif
+ 
+ /* ICALL trace ring buffer */
+ volatile uint32_t g_icall_trace[16] = {0};
+diff --git a/src/kernel/xbox_memory_layout.h b/src/kernel/xbox_memory_layout.h
+index 7b9c5e8..f19a957 100644
+--- a/src/kernel/xbox_memory_layout.h
++++ b/src/kernel/xbox_memory_layout.h
+@@ -343,6 +343,10 @@ void xbox_WatchInit(void);
+ #  define RECOMP_TLS _Thread_local
+ #endif
+ 
++/* On Android the registers are one thread-local (the template's
++ * recomp_cpu_tls.h, why there). */
++#include "../../templates/runtime/recomp_cpu_tls.h"
++
+ /* SSE register storage, shared with the generated code. Defined in both this
+  * header and templates/runtime/recomp_types.h -- a translation unit can end up
+  * including both, so the guard keeps that from being a redefinition. Keep the
+@@ -433,7 +437,9 @@ extern uint32_t g_xbox_stack_size;
+  * thread gets its own from xbox_AllocThreadTib() and points g_fs_base at
+  * it. */
+ #define XBOX_TIB_MAIN       0x00004000
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_fs_base;
++#endif
+ #define XBOX_FS_BASE        g_fs_base
+ 
+ #define XBOX_STACK_BASE     g_xbox_stack_base
+diff --git a/src/platform/android_host.c b/src/platform/android_host.c
+index 5046301..d073aec 100644
+--- a/src/platform/android_host.c
++++ b/src/platform/android_host.c
+@@ -150,6 +150,40 @@ int recomp_android_fast_cpu(void)
+     return recomp_android_cpu_rank(0);
+ }
+ 
++static long cpu_max_freq(int cpu)
++{
++    char path[96];
++    long f = -1;
++    FILE *fp;
++
++    snprintf(path, sizeof path, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", cpu);
++    fp = fopen(path, "r");
++    if (!fp)
++        return -1;
++    if (fscanf(fp, "%ld", &f) != 1)
++        f = -1;
++    fclose(fp);
++    return f;
++}
++
++int recomp_android_guest_cpu(void)
++{
++    cpu_set_t set;
++    int i, fast = recomp_android_fast_cpu(), twin = -1;
++    long top;
++
++    if (fast < 0 || sched_getaffinity(0, sizeof set, &set) != 0)
++        return fast;
++    top = cpu_max_freq(fast);
++    for (i = 0; i < 64 && i < CPU_SETSIZE; i++)
++        if (i != fast && CPU_ISSET(i, &set) && top > 0 && cpu_max_freq(i) == top)
++            twin = i;
++    if (twin >= 0)
++        return twin;
++    i = recomp_android_cpu_rank(1);
++    return i >= 0 ? i : fast;
++}
++
+ #else
+ /* Not Android: nothing (ISO C forbids an empty translation unit). */
+ typedef int recomp_android_host_unused;
+diff --git a/src/platform/android_host.h b/src/platform/android_host.h
+index 2312b06..4a1782f 100644
+--- a/src/platform/android_host.h
++++ b/src/platform/android_host.h
+@@ -54,6 +54,14 @@ int recomp_android_fast_cpu(void);
+  * -1 when there is no such kind. */
+ int recomp_android_cpu_rank(int rank);
+ 
++/* The guest threads' core, beside the executor's (recomp_android_fast_cpu):
++ * the highest-numbered other core of the fastest kind when there are two or
++ * more of it (the two A78s of a Dimensity 1080, the two prime cores of a
++ * Snapdragon 8 Elite), else the next kind's (rank 1), else the fastest; -1
++ * when cpufreq cannot be read. Rank 1 alone put the title on a little A55
++ * of a 2+6 layout, at about a third of a big core's speed. */
++int recomp_android_guest_cpu(void);
++
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/src/usb/ohci.c b/src/usb/ohci.c
+index 6da78b3..ac924ba 100644
+--- a/src/usb/ohci.c
++++ b/src/usb/ohci.c
+@@ -55,9 +55,11 @@ extern uint32_t xbox_GetConnectedInterrupt(uint32_t vector);
+ #else
+ #  define OHCI_TLS __thread
+ #endif
++#ifndef RECOMP_CPU_STRUCT
+ extern OHCI_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
+ extern OHCI_TLS uint32_t g_ebx, g_esi, g_edi;
+ extern OHCI_TLS uint32_t g_fs_base;
++#endif
+ extern uint32_t xbox_AllocThreadTib(void);
+ 
+ /* The vector XPP takes for USB0. HalGetInterruptVector(1) returns 1 here, and
+diff --git a/src/video/android_perf.c b/src/video/android_perf.c
+index 4e62d22..98ac468 100644
+--- a/src/video/android_perf.c
++++ b/src/video/android_perf.c
+@@ -37,7 +37,11 @@
+  *                system's threads in the process are left alone. The
+  *                threads are looked over at the first frame and every 5 s.
+  *
+- * RECOMP_ANDROID_ADPF=0 / RECOMP_ANDROID_BIGCORES=0: off, for A/B.
++ *   thermal      the system's thermal headroom forecast caps the vblank
++ *                hold's spin as the phone nears throttling (thermal_check).
++ *
++ * RECOMP_ANDROID_ADPF=0 / RECOMP_ANDROID_BIGCORES=0 / RECOMP_ANDROID_THERMAL=0:
++ * off, for A/B.
+  */
+ #if defined(__ANDROID__)
+ 
+@@ -77,6 +81,77 @@ static int env_off(const char *name)
+     return e && e[0] == '0';
+ }
+ 
++/* ── thermal headroom ───────────────────────────────────────────────────── */
++
++/* The vblank hold's spin (present.spin_lead, kernel_pacing.c) keeps the
++ * executor's clock up, and is the part of its work that buys nothing but
++ * that: on a Snapdragon 8 Elite 35 % of the executor's time, and without it
++ * the hottest core ran 11 C cooler. Once a phone nears its throttling point
++ * that spin only brings the throttle sooner, after which every frame is
++ * slower. So, every 2 s, the system's forecast of its thermal headroom ten
++ * seconds out (AThermal_getThermalHeadroom, API 31; 1.0 is where it starts
++ * throttling) caps the lead in any power mode:
++ *
++ *   headroom >= 0.95   no spin (kept until below 0.90)
++ *   headroom >= 0.85   at most 2 ms (kept until below 0.75)
++ *   below 0.75         the mode's own lead again
++ *
++ * RECOMP_ANDROID_THERMAL=0: off. */
++typedef struct AThermalManager AThermalManager;
++typedef AThermalManager *(*th_acquire_fn)(void);
++typedef float (*th_headroom_fn)(AThermalManager *, int);
++
++static void thermal_check(int64_t now)
++{
++    static int state;               /* 0 not looked at, 1 on, -1 off */
++    static th_headroom_fn headroom;
++    static AThermalManager *mgr;
++    static int64_t at;
++    static int level = -1;          /* -1 uncapped, else the cap in ms */
++    extern void xbox_PacingSetThermalLeadCap(int64_t ns);
++    float h;
++    int want;
++
++    if (state < 0 || (at && now - at < 2000000000ll))
++        return;
++    at = now;
++    if (!state) {
++        th_acquire_fn acquire;
++        state = -1;
++        if (env_off("RECOMP_ANDROID_THERMAL")) {
++            XR_NOTICE(LOGA "thermal: off (RECOMP_ANDROID_THERMAL=0)\n");
++            return;
++        }
++        if (android_get_device_api_level() < 31 || !libandroid()) {
++            XR_NOTICE(LOGA "thermal: no headroom forecast (API %d, needs 31)\n",
++                      android_get_device_api_level());
++            return;
++        }
++        acquire = (th_acquire_fn)dlsym(libandroid(), "AThermal_acquireManager");
++        headroom = (th_headroom_fn)dlsym(libandroid(), "AThermal_getThermalHeadroom");
++        mgr = acquire ? acquire() : NULL;
++        if (!mgr || !headroom) {
++            XR_NOTICE(LOGA "thermal: no thermal manager; the spin lead is not capped\n");
++            return;
++        }
++        state = 1;
++    }
++    h = headroom(mgr, 10);
++    if (h != h)                     /* NaN: asked too soon, or not known */
++        return;
++    want = h >= 0.95f ? 0 : h >= 0.85f ? 2 : h < 0.75f ? -1 : level;
++    if (level == 0 && h >= 0.90f)
++        want = 0;                   /* no spin until below 0.90 */
++    if (want == level)
++        return;
++    level = want;
++    xbox_PacingSetThermalLeadCap(want < 0 ? -1 : (int64_t)want * 1000000ll);
++    if (want < 0)
++        XR_NOTICE(LOGA "thermal: headroom %.2f, the spin lead is the power mode's again\n", h);
++    else
++        XR_NOTICE(LOGA "thermal: headroom %.2f, spin lead at most %d ms\n", h, want);
++}
++
+ /* ── frame rate ─────────────────────────────────────────────────────────── */
+ 
+ typedef int32_t (*set_frame_rate_fn)(ANativeWindow *, float, int8_t);
+@@ -278,8 +353,9 @@ static int big_cores(void)
+      * kernel_bridge.c make), left out when that leaves any. */
+     {
+         extern int recomp_android_cpu_rank(int rank);
++        extern int recomp_android_guest_cpu(void);
+         pinned[0] = recomp_android_cpu_rank(0);
+-        pinned[1] = recomp_android_cpu_rank(1);
++        pinned[1] = recomp_android_guest_cpu();
+     }
+     rest = big;
+     for (i = 0; i < 2; i++)
+@@ -302,6 +378,14 @@ static int big_cores(void)
+                   " they are\n", b);
+         return 0;
+     }
++    /* The executor and the guest hold every big core (two of them, as on a
++     * Dimensity 1080): the other threads (the APU's among them) would only
++     * take turns with those two, so the scheduler places them. */
++    if (CPU_COUNT(&rest) == 0) {
++        XR_NOTICE(LOGA "big cores: the pinned %d and %d are all of them (%s); the other"
++                  " threads left where they are\n", pinned[0], pinned[1], b);
++        return 0;
++    }
+     s_big_state = 1;
+     XR_NOTICE(LOGA "big cores: the game's other threads go on %s\n", s_big_desc);
+     return 1;
+@@ -438,6 +522,7 @@ void xbox_AndroidPerfFrame(void)
+             placed_at = now;
+             place_threads();
+         }
++        thermal_check(now);
+     }
+     if (!ph_load())
+         return;
+diff --git a/src/video/fb_present_vulkan.c b/src/video/fb_present_vulkan.c
+index 08ddf78..24b334b 100644
+--- a/src/video/fb_present_vulkan.c
++++ b/src/video/fb_present_vulkan.c
+@@ -1514,6 +1514,19 @@ static int resurface(SDL_Window *win)
+             return 0;
+         tried_ns = now;
+     }
++#else
++    {
++        /* In the background the activity has given its ANativeWindow back
++         * while SDL still reports the old size: a surface made now is made
++         * on nothing (SIGSEGV in the loader's vkCreateAndroidSurfaceKHR).
++         * Wait for the window to come back; the next present tries again. */
++        SDL_SysWMinfo wi;
++        SDL_VERSION(&wi.version);
++        if ((SDL_GetWindowFlags(win) & (SDL_WINDOW_MINIMIZED | SDL_WINDOW_HIDDEN))
++            || !SDL_GetWindowWMInfo(win, &wi) || wi.subsystem != SDL_SYSWM_ANDROID
++            || !wi.info.android.window)
++            return 0;
++    }
+ #endif
+     queue_idle();
+     pthread_mutex_lock(&s_sc_mu);
+@@ -1862,8 +1875,15 @@ static int make_swapchain(SDL_Window *win)
+     s_and_w = (uint32_t)dw;
+     s_and_h = (uint32_t)dh;
+     {
++        /* Unset: the rows the title is drawn at (480 at render.scale), not
++         * the panel's: the picture has no more detail than that, and the
++         * compositor scales the surface up for nothing. A phone's swapchain
++         * at the panel's size was 6 images of 2340x1080 on a Galaxy A34,
++         * 61 MB, and as much to write and scan out every frame. 0: the
++         * panel's size. */
+         const char *e = getenv("RECOMP_ANDROID_SWAPCHAIN_HEIGHT");
+-        uint32_t rows = e ? (uint32_t)strtoul(e, NULL, 10) : 0;
++        extern unsigned nv2a_host_render_scale_x2(void);
++        uint32_t rows = e ? (uint32_t)strtoul(e, NULL, 10) : 240u * nv2a_host_render_scale_x2();
+         if (rows >= 240 && rows < s_sc_ext.height) {
+             s_sc_ext.width = ((s_sc_ext.width * rows / s_sc_ext.height) + 1u) & ~1u;
+             s_sc_ext.height = rows;
+diff --git a/templates/runtime/recomp_cpu_tls.h b/templates/runtime/recomp_cpu_tls.h
+new file mode 100644
+index 0000000..80cffa0
+--- /dev/null
++++ b/templates/runtime/recomp_cpu_tls.h
+@@ -0,0 +1,108 @@
++/*
++ * recomp_cpu_tls.h - the guest's per-thread registers as one thread-local
++ * (Android), included by recomp_types.h and src/kernel/xbox_memory_layout.h
++ * right after they define RECOMP_TLS.
++ *
++ * On Android the game is a library the activity dlopens, so its TLS is the
++ * dynamic kind: every thread-local a function touches is a TLS descriptor
++ * call (tlsdesc_resolver_dynamic), one per variable. With each register its
++ * own thread-local that was 21 % of the guest thread's time on a Snapdragon
++ * 8 Elite. As fields of one thread-local, a function resolves the block once
++ * and reaches each register at an offset from it. (Local-dynamic TLS would
++ * do the same, but lld has no AArch64 TLSLD relocations.)
++ *
++ * RECOMP_CPU_STRUCT is defined where the block is used; the names stay the
++ * same (g_eax is g_recomp_cpu.r_eax; r_, as recomp_types.h defines eax
++ * and the rest as macros), so the generated code and the runtime
++ * read as before. With it, nothing may declare the registers one by one:
++ * those declarations are under #ifndef RECOMP_CPU_STRUCT.
++ */
++#ifndef RECOMP_CPU_TLS_H
++#define RECOMP_CPU_TLS_H
++
++#if defined(__ANDROID__)
++#define RECOMP_CPU_STRUCT 1
++#endif
++
++#ifdef RECOMP_CPU_STRUCT
++#include <stdint.h>
++
++/* The same two unions as recomp_types.h and xbox_memory_layout.h, under the
++ * same guards: whichever comes first defines them. */
++#ifndef RECOMP_MMX_DEFINED
++#define RECOMP_MMX_DEFINED
++typedef union RecompMmx {
++    int8_t   b[8];
++    uint8_t  ub[8];
++    int16_t  w[4];
++    uint16_t uw[4];
++    int32_t  d[2];
++    uint32_t ud[2];
++    uint64_t q;
++} RecompMmx;
++#endif
++
++#ifndef RECOMP_XMM_DEFINED
++#define RECOMP_XMM_DEFINED
++typedef union RecompXmm {
++    float    f[4];
++    double   d[2];
++    uint32_t u[4];
++    int32_t  i[4];
++    uint64_t q[2];
++} RecompXmm;
++#endif
++
++typedef struct RecompCpu {
++    /* the integer registers first: what nearly every function touches */
++    uint32_t r_eax, r_ecx, r_edx, r_esp, r_ebx, r_esi, r_edi, r_ebp;
++    uint32_t r_eflags;
++    int      r_df;
++    uint32_t r_fs_base, r_seh_ebp;
++    /* x87 */
++    double   r_fp_stack[8];
++    int      r_fp_top;
++    int      r_fp_cmp;
++    uint16_t r_fp_control_word, r_fp_cc;
++    RecompXmm r_xmm[8];
++    RecompMmx r_mm[8];
++} RecompCpu;
++
++extern RECOMP_TLS RecompCpu g_recomp_cpu;
++
++#define g_eax             (g_recomp_cpu.r_eax)
++#define g_ecx             (g_recomp_cpu.r_ecx)
++#define g_edx             (g_recomp_cpu.r_edx)
++#define g_esp             (g_recomp_cpu.r_esp)
++#define g_ebx             (g_recomp_cpu.r_ebx)
++#define g_esi             (g_recomp_cpu.r_esi)
++#define g_edi             (g_recomp_cpu.r_edi)
++#define g_ebp             (g_recomp_cpu.r_ebp)
++#define g_eflags          (g_recomp_cpu.r_eflags)
++#define g_df              (g_recomp_cpu.r_df)
++#define g_fs_base         (g_recomp_cpu.r_fs_base)
++#define g_seh_ebp         (g_recomp_cpu.r_seh_ebp)
++#define g_fp_stack        (g_recomp_cpu.r_fp_stack)
++#define g_fp_top          (g_recomp_cpu.r_fp_top)
++#define g_fp_cmp          (g_recomp_cpu.r_fp_cmp)
++#define g_fp_control_word (g_recomp_cpu.r_fp_control_word)
++#define g_fp_cc           (g_recomp_cpu.r_fp_cc)
++#define g_xmm0            (g_recomp_cpu.r_xmm[0])
++#define g_xmm1            (g_recomp_cpu.r_xmm[1])
++#define g_xmm2            (g_recomp_cpu.r_xmm[2])
++#define g_xmm3            (g_recomp_cpu.r_xmm[3])
++#define g_xmm4            (g_recomp_cpu.r_xmm[4])
++#define g_xmm5            (g_recomp_cpu.r_xmm[5])
++#define g_xmm6            (g_recomp_cpu.r_xmm[6])
++#define g_xmm7            (g_recomp_cpu.r_xmm[7])
++#define g_mm0             (g_recomp_cpu.r_mm[0])
++#define g_mm1             (g_recomp_cpu.r_mm[1])
++#define g_mm2             (g_recomp_cpu.r_mm[2])
++#define g_mm3             (g_recomp_cpu.r_mm[3])
++#define g_mm4             (g_recomp_cpu.r_mm[4])
++#define g_mm5             (g_recomp_cpu.r_mm[5])
++#define g_mm6             (g_recomp_cpu.r_mm[6])
++#define g_mm7             (g_recomp_cpu.r_mm[7])
++#endif /* RECOMP_CPU_STRUCT */
++
++#endif /* RECOMP_CPU_TLS_H */
+diff --git a/templates/runtime/recomp_types.h b/templates/runtime/recomp_types.h
+index 4359a2c..7151d52 100644
+--- a/templates/runtime/recomp_types.h
++++ b/templates/runtime/recomp_types.h
+@@ -155,7 +155,8 @@ extern uint32_t g_xbox_code_hi;
+  * waiting for work never returns and startup deadlocks.
+  *
+  * On hardware each thread has its own register set, so model it that way.
+- * Thread-local costs an indirection per access; a deadlock costs the title. */
++ * Thread-local costs an indirection per access; a deadlock costs the title.
++ * (On Android, one thread-local for them all: recomp_cpu_tls.h.) */
+ #if defined(_MSC_VER)
+ #  define RECOMP_TLS __declspec(thread)
+ #elif defined(__GNUC__) || defined(__clang__)
+@@ -164,13 +165,19 @@ extern uint32_t g_xbox_code_hi;
+ #  define RECOMP_TLS _Thread_local
+ #endif
+ 
++#include "recomp_cpu_tls.h"
++
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
+ extern RECOMP_TLS uint32_t g_ebx, g_esi, g_edi;
++#endif
+ 
+ /* x87 stack. Per-thread for the same reason the integer registers are:
+  * arguments are passed in st(0)/st(1) across call boundaries. */
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS double g_fp_stack[8];
+ extern RECOMP_TLS int g_fp_top;
++#endif
+ 
+ /**
+  * SEH frame pointer bridge.
+@@ -188,10 +195,14 @@ extern RECOMP_TLS int g_fp_top;
+  * Per-thread, because a TIB is. fs:[0] is the SEH chain head and fs:[4]
+  * reaches the CRT's per-thread data, so a single shared base makes every
+  * guest thread the same thread as far as the CRT is concerned. */
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_fs_base;
++#endif
+ #define XBOX_FS_BASE g_fs_base
+ 
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_seh_ebp;
++#endif
+ 
+ /* ---- non-local jumps (setjmp / longjmp) --------------------------------
+  *
+@@ -233,7 +244,9 @@ extern RECOMP_TLS uint32_t g_seh_ebp;
+ #include <setjmp.h>
+ jmp_buf *recomp_setjmp_slot(uint32_t buf_va);
+ int recomp_guest_longjmp(uint32_t buf_va, uint32_t value);
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_ebp;
++#endif
+ 
+ /* EFLAGS.DF, and the signed step the string instructions take because of it.
+  *
+@@ -247,7 +260,9 @@ extern RECOMP_TLS uint32_t g_ebp;
+  * be found by name, and the dashboard rebooted rather than showing a UI.
+  * memmove's overlapping case is the same instruction and the same bug.
+  */
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS int g_df;
++#endif
+ #define RECOMP_DF_STEP(n) (g_df ? -(int32_t)(n) : (int32_t)(n))
+ 
+ /* EFLAGS as pushfd and popfd see it.
+@@ -266,7 +281,9 @@ extern RECOMP_TLS int g_df;
+  * Only popfd writes g_eflags. cli and sti do not update its IF bit (they
+  * have no lift that touches it), so a pushfd after them reports the IF of
+  * the last popfd image -- set, unless the guest popped it clear. */
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint32_t g_eflags;
++#endif
+ #define RECOMP_EFL_WRITABLE 0x00247FD5u
+ static inline uint32_t recomp_pushfd(uint32_t known, uint32_t bits) {
+     return (g_eflags & ~(known | 0x400u)) | (bits & known) | 0x2u
+@@ -285,9 +302,11 @@ void xbox_Cpuid(uint32_t leaf, uint32_t subleaf, uint32_t out[4]);
+    above is: one guest routine can lift to several C functions, so a compare
+    and the FNSTSW that reads it can land in different bodies, and the control
+    word has to survive a call. (g_fp_stack/g_fp_top are declared above.) */
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS uint16_t g_fp_control_word;
+ extern RECOMP_TLS int g_fp_cmp;
+ extern RECOMP_TLS uint16_t g_fp_cc;
++#endif
+ /* x87 precision control (control word bits 8-9). The stack is double-backed,
+  * which matches PC=53 and is close enough for PC=64, but PC=24 -- what the
+  * Xbox runs with -- rounds every arithmetic result to float. A title that
+@@ -668,8 +687,10 @@ typedef union RecompXmm {
+ } RecompXmm;
+ #endif
+ 
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS RecompXmm g_xmm0, g_xmm1, g_xmm2, g_xmm3;
+ extern RECOMP_TLS RecompXmm g_xmm4, g_xmm5, g_xmm6, g_xmm7;
++#endif
+ 
+ /* -- construction -- */
+ 
+@@ -1324,8 +1345,10 @@ typedef union RecompMmx {
+ } RecompMmx;
+ #endif
+ 
++#ifndef RECOMP_CPU_STRUCT
+ extern RECOMP_TLS RecompMmx g_mm0, g_mm1, g_mm2, g_mm3;
+ extern RECOMP_TLS RecompMmx g_mm4, g_mm5, g_mm6, g_mm7;
++#endif
+ 
+ static inline RecompMmx MMX_ZERO(void) { RecompMmx r; r.q = 0; return r; }
+ 

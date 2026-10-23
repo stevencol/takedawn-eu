@@ -48,7 +48,9 @@
 #include "xbox_settings.h"
 #endif
 
+#ifndef RECOMP_CPU_STRUCT
 extern RECOMP_TLS uint32_t g_eax, g_ebx, g_ecx, g_edx, g_esi, g_edi, g_esp;
+#endif
 extern ptrdiff_t g_xbox_mem_offset;
 extern void sub_001D2879(void);          /* the title's heap: (size, tag), stdcall */
 

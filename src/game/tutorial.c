@@ -21,7 +21,9 @@
 #include "controls.h"
 #include "platform/recomp_patch.h"
 
+#ifndef RECOMP_CPU_STRUCT
 extern RECOMP_TLS uint32_t g_esp;
+#endif
 extern ptrdiff_t g_xbox_mem_offset;
 
 #define TU_M32(va) (*(uint32_t *)((uintptr_t)g_xbox_mem_offset + (uint32_t)(va)))

@@ -109,9 +109,11 @@ extern void xbox_InputPanicStop(int wait_ms);
 /* RECOMP_TLS is required: the runtime defines these thread-local, and a plain
  * extern resolves to the image's TLS template rather than this thread's copy,
  * which starts the guest with every register at zero. */
+#ifndef RECOMP_CPU_STRUCT
 extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
 extern RECOMP_TLS uint32_t g_seh_ebp;
 extern RECOMP_TLS uint32_t g_ebx, g_esi, g_edi;
+#endif
 extern ptrdiff_t g_xbox_mem_offset;
 
 extern void xbe_entry_point(void);
@@ -3067,6 +3069,20 @@ static void set_quit_after(const char *seconds)
 }
 #endif
 
+#if defined(BO3_PGO_GENERATE) && defined(__ANDROID__)
+/* The counting build's writer (main): the counters so far, every 30 s. */
+static void *pgo_writer(void *arg)
+{
+    extern int __llvm_profile_write_file(void);
+    (void)arg;
+    for (;;) {
+        sleep(30);
+        __llvm_profile_write_file();
+    }
+    return NULL;
+}
+#endif
+
 int main(int argc, char **argv)
 {
     const char *record = NULL, *sb_scene = NULL, *data_arg = NULL;
@@ -3155,6 +3171,19 @@ int main(int argc, char **argv)
      * to the app's files directory, where "Burnout 3 Takedown" is. A report
      * from the start page keeps the game's log file as the last run left it. */
     recomp_android_host_init("takedawn", bug_report ? NULL : "takedawn.log");
+#if defined(BO3_PGO_GENERATE)
+    /* A profile-counting build (-DBO3_PGO_GENERATE=ON): the counters to
+     * <files>/pgo.profraw every 30 s, since the system ends an app without
+     * its exit handlers. The working directory is the files directory. */
+    {
+        extern void __llvm_profile_set_filename(const char *);
+        static pthread_t pgo;
+        __llvm_profile_set_filename("pgo.profraw");
+        if (pthread_create(&pgo, NULL, pgo_writer, NULL) == 0)
+            pthread_detach(pgo);
+        fprintf(stderr, "[PGO] counting build: pgo.profraw every 30 s\n");
+    }
+#endif
 #endif
 #if defined(BO3_HAVE_BUG_REPORT)
     /* Before any default is set: which variables the user's environment
@@ -3682,11 +3711,13 @@ int main(int argc, char **argv)
     env_default("RECOMP_PRESENT_FILTER", "linear");
     env_default("RECOMP_GFX_SHARPEN", "0.30");
     env_default("RECOMP_GFX_UI_SCALE", "2x");
-    /* MAILBOX, not FIFO: the title is paced by the display-locked vblank
-     * (the Choreographer's refresh times), one frame a refresh, so nothing
-     * tears; with FIFO the presenter sat in dequeueBuffer most of every
-     * frame and a 2x race had 16 % slow frames against 1.5 % (BO-85). */
-    env_default("RECOMP_PRESENT_VSYNC", "0");
+    /* FIFO, the one mode every Android device has. MAILBOX had fewer slow
+     * frames on the Retroid Pocket 5 (BO-85: 1.5 % against 16 % in a 2x
+     * race), but on a Xiaomi (HyperOS, Snapdragon 8 Elite) the compositor
+     * stopped latching its frames: the picture froze for seconds while the
+     * game and its audio ran on. RECOMP_PRESENT_VSYNC=0 brings MAILBOX
+     * back for a device that does well with it. */
+    env_default("RECOMP_PRESENT_VSYNC", "1");
 #else
     env_default("RECOMP_GFX_ANISO", "8");
 #endif
@@ -3729,7 +3760,19 @@ int main(int argc, char **argv)
      * at about 10 W, against 14 W spinning throughout. */
     env_default("RECOMP_VBLANK_SYNC", "display");
     env_default("RECOMP_PRESENT_PACING", "sleep");
+#if defined(__ANDROID__)
+    /* No spin on a phone (Battery saver). Once the guest registers were one
+     * thread-local and the title had a big core of its own (the toolkit's
+     * recomp_cpu_tls.h, recomp_android_guest_cpu), the spin bought nothing:
+     * 2-minute AI races, 0 ms against 8, a Snapdragon 8 Elite 60.0 fps
+     * against 59.3 with 1.3 % of frames over 20 ms against 1.4, a Dimensity
+     * 1080 57.3 against 57.1; and the executor's thread used a quarter of a
+     * core less (0.57 cores against 0.82, 0.60 against 0.77). Balanced and
+     * Auto stay in the overlay, under the thermal cap (android_perf.c). */
+    env_default("RECOMP_PRESENT_SPIN_LEAD", "0");
+#else
     env_default("RECOMP_PRESENT_SPIN_LEAD", "8");
+#endif
 #endif
 #else
     env_default("RECOMP_APU_DSP_ACK", "0x825F8810");
