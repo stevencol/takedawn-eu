@@ -33,6 +33,29 @@
 > *Copia modificada del Takedawn original para que lea la versión europea
 > (PAL) del disco. Todo lo demás es trabajo del proyecto original.*
 
+### takedawn-eu on Android
+
+Download: [`Takedawn-0.2.3-eu-android-arm64.apk`](https://github.com/stevencol/takedawn-eu/releases/download/v0.2.3-eu/Takedawn-0.2.3-eu-android-arm64.apk)
+from the [takedawn-eu releases](https://github.com/stevencol/takedawn-eu/releases).
+It needs your own PAL disc, as the original needs the US one.
+
+This fork's Android build is tuned to run cool and steady on any phone: the
+device's own graphics driver when it has Vulkan 1.3, vsync, the picture at
+the screen's own shape, a Quality preset picked for the phone
+(Graphics > Quality: Basic, Standard, High, Pro), profile-guided
+optimisation, and fixes in the toolkit
+([tools/toolkit-patches](tools/toolkit-patches/README.md)). Tested with an
+AI-driven race (`tools/perf/android_race_power.sh`) at the defaults:
+
+| Phone | Chip | Graphics | Before | takedawn-eu 0.2.3 |
+|---|---|---|---|---|
+| Poco (2510DPC44G), HyperOS, Android 16 | Snapdragon 8 Elite | Adreno 830, the phone's own driver | 55 fps, 15 % of frames over 20 ms, CPU up to 75 °C, 294 MB | 59-60 fps, 1-3 % over 20 ms, CPU 56-67 °C (steady over 10 minutes), 255 MB |
+| Samsung Galaxy A34, Android 16 | Dimensity 1080 | Mali-G68, the phone's own driver | 35 fps, 96 % of frames over 20 ms, 536 MB | 59-60 fps, 2-5 % over 20 ms, chip at 37-40 °C, about 395 MB |
+
+Also tested on the Poco: five changes of the Quality preset with the menu's
+Restart now in a row, each restarted game at 62 fps (0.2.2-eu could freeze
+there). Not tested: other phones, and the desktop builds of this fork.
+
 > [!IMPORTANT]
 > Takedawn is an unofficial, non-commercial fan project. It is not affiliated
 > with, endorsed by or sponsored by Electronic Arts, Criterion Games or
@@ -265,6 +288,8 @@ report zip from Advanced > Create bug report helps a lot.
 | Linux desktop with an AMD graphics card (Bazzite) | Tested |
 | Ubuntu 24.04 with AMD integrated graphics (Ryzen 7 5825U) | Tested |
 | Retroid Pocket 5 | Tested |
+| Poco with Snapdragon 8 Elite (takedawn-eu, PAL disc) | Tested by this fork: 60 fps on the phone's own driver ([results](#takedawn-eu-on-android)) |
+| Samsung Galaxy A34, Mali-G68 (takedawn-eu, PAL disc) | Tested by this fork: 59-60 fps on the phone's own driver ([results](#takedawn-eu-on-android)) |
 | Samsung Galaxy S20 FE (Snapdragon 865) | Runs. A one-hour session had no problems. Slower than the Retroid Pocket 5 once the phone warms up |
 | Poco F4 (Snapdragon 870) | Runs, but doesn't hold 60 fps. Always slower than the Retroid Pocket 5 |
 | Retroid Pocket Classic (Snapdragon G1 Gen 2) | Starts, but 30 fps at most, so the game runs slow |
