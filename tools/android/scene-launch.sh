@@ -105,9 +105,12 @@ if [ -n "$SAVE_DIR" ]; then
   fi
 fi
 $ADB push "$D/device-env.txt" "$F/scene-env.txt" > /dev/null
+# The scene's own commands on the device: off the cores the game pins.
+. "$(dirname "$0")/little_cores.sh"
+ON_LITTLE="taskset $(little_mask)"
 $ADB shell am start -n $P/.StartActivity > /dev/null
 sleep 2
-$ADB shell "tail -n +1 -F $F/takedawn.log" > "$RECOMP_STDIO_LOG" 2>/dev/null &
+$ADB shell "$ON_LITTLE tail -n +1 -F $F/takedawn.log" > "$RECOMP_STDIO_LOG" 2>/dev/null &
 logpid=$!
 ( tail -n +1 -F "$D/pad.txt" 2>/dev/null | while IFS= read -r line; do
       [ -n "$line" ] && $ADB shell "echo '$line' >> $F/scene-pad.txt"
@@ -115,7 +118,7 @@ logpid=$!
 padpid=$!
 mpids=""
 for v in ${MIRROR[@]+"${MIRROR[@]}"}; do
-  $ADB shell "tail -n +1 -F $F/scene-$v.txt" > "${!v}" 2>/dev/null &
+  $ADB shell "$ON_LITTLE tail -n +1 -F $F/scene-$v.txt" > "${!v}" 2>/dev/null &
   mpids="$mpids $!"
 done
 trap '$ADB shell "am force-stop $P; rm -f $F/scene-env.txt $F/scene-pad.txt $F/scene-BO3_*.txt"; kill $logpid $padpid $mpids 2>/dev/null; pkill -P $padpid 2>/dev/null' EXIT TERM INT
@@ -134,4 +137,4 @@ if [ -n "$SAVE_DIR" ]; then
        $ADB shell "am force-stop $P"; exit 3 ;;
   esac
 fi
-while [ -n "$($ADB shell pidof $P 2>/dev/null)" ]; do sleep 2; done
+while [ -n "$($ADB shell $ON_LITTLE pidof $P 2>/dev/null)" ]; do sleep 2; done

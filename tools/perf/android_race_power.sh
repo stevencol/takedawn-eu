@@ -54,6 +54,9 @@ else
     $ADB shell "rm -f $settings"
 fi
 $ADB push "$REPO/tools/perf/android_sample.sh" /data/local/tmp/android_sample.sh > /dev/null
+# The sampler off the cores the game pins (little_cores.sh says why).
+. "$REPO/tools/android/little_cores.sh"
+LITTLE=$(little_mask)
 
 # The sampler: once the AI has the car (the scene's own log line), WARM
 # seconds, then SECS of samples; then the game is stopped, which ends the
@@ -63,7 +66,7 @@ $ADB push "$REPO/tools/perf/android_sample.sh" /data/local/tmp/android_sample.sh
     sleep "$WARM"
     lastflip() { grep -a -o '\[GPU\] flip [0-9]*' "$R/log.txt" | tail -n 1 | awk '{print $3}'; }
     f0=$(lastflip)
-    $ADB shell sh /data/local/tmp/android_sample.sh "$SECS" $P > "$R/sample.txt"
+    $ADB shell taskset $LITTLE sh /data/local/tmp/android_sample.sh "$SECS" $P > "$R/sample.txt"
     echo "$f0 $(lastflip)" > "$R/flips.txt"
     $ADB shell dumpsys meminfo $P > "$R/meminfo.txt" 2>/dev/null
     cp "$R/log.txt" "$R/log-at-end.txt"
