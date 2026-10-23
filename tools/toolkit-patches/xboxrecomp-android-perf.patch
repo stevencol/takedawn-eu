@@ -571,6 +571,149 @@ index 7b9c5e8..07b0a4a 100644
  #define XBOX_FS_BASE        g_fs_base
  
  #define XBOX_STACK_BASE     g_xbox_stack_base
+diff --git a/src/overlay/overlay_ui.cpp b/src/overlay/overlay_ui.cpp
+index f51c09d..495a1eb 100644
+--- a/src/overlay/overlay_ui.cpp
++++ b/src/overlay/overlay_ui.cpp
+@@ -202,6 +202,7 @@ static const char *const n_scale[]     = { "1x (640x480)", "1.5x (960x720)", "2x
+ static const char *const n_face[]      = { "Xbox layout", "Nintendo layout", NULL };
+ static const char *const n_scheme[]    = { "Xbox layout", "PS2 layout", NULL };
+ static const char *const n_ui_scale[]  = { "Off", "2x", "4x", NULL };
++static const char *const n_quality[]   = { "Custom", "Basic", "Standard", "High", "Pro", NULL };
+ static const char *const n_texup[]     = { "Off", "FSRCNNX", "NNEDI3", NULL };
+ static const char *const n_texup_sc[]  = { "2x", "4x", NULL };
+ static const char *const n_glyphs[]    = { "Auto (the controller in use)", "Xbox (original)", "Xbox (modern: LB RB LT RT)", "PlayStation (DualShock 3, 4)", "PlayStation 5 (DualSense)", "Nintendo", "Steam (Deck, Steam Controller)", "Positional (any pad)", "Keyboard", NULL };
+@@ -293,6 +294,7 @@ static constexpr Meta k_meta[XS_COUNT] = {
+     /* XS_INPUT_TOUCH_OPACITY */ { XS_INPUT_TOUCH_OPACITY, "Touch controls opacity", "How solid the on-screen controls look.", 0.1, FMT_PERCENT, NULL, 0 },
+     /* XS_INPUT_TOUCH_SCALE */  { XS_INPUT_TOUCH_SCALE, "Touch controls size", "100% suits a phone or a 6-7 inch handheld held in both hands.", 0.1, FMT_PERCENT, NULL, 0 },
+     /* XS_INPUT_TOUCH_AUTO_GAS */ { XS_INPUT_TOUCH_AUTO_GAS, "Touch: accelerate automatically", "In a race the car accelerates by itself; hold BRAKE to slow down or reverse. Touch controls only.", 1, FMT_PLAIN, NULL, 0 },
++    /* XS_GRAPHICS_QUALITY */   { XS_GRAPHICS_QUALITY, "Quality", "Sets the rows below at once. Basic: the Xbox's resolution, full screen and smoothed. Standard: 1.5x. High: 2x, far detail. Pro: 3x, SMAA. Picked for this device at first start.", 1, FMT_PLAIN, n_quality, 0 },
+ #endif
+ };
+ /* One entry per setting, in xbox_settings.h's order: a row shows its own
+@@ -1089,6 +1091,9 @@ static int page_rows(int page, Row *r)
+         ACT(A_RESET_PAGE, "Reset this page to the defaults");
+         break;
+     case P_GRAPHICS:
++#if defined(__ANDROID__)
++        SET(XS_GRAPHICS_QUALITY);
++#endif
+         SET(XS_GRAPHICS_RENDER_SCALE); SET(XS_GRAPHICS_ANISO);
+         SET(XS_GRAPHICS_AA); SET(XS_GRAPHICS_SHARPEN);
+         SET(XS_GRAPHICS_LOD_BIAS);
+diff --git a/src/overlay/xbox_settings.c b/src/overlay/xbox_settings.c
+index 5aa02ef..888e701 100644
+--- a/src/overlay/xbox_settings.c
++++ b/src/overlay/xbox_settings.c
+@@ -66,6 +66,7 @@ _Static_assert(sizeof k_glyphs / sizeof k_glyphs[0] == XBOX_GLYPHS_MODE_COUNT +
+ #if defined(__ANDROID__)
+ static const char *const k_vibration[] = { "auto", "controller", "device", "off", NULL };
+ static const char *const k_touch[]     = { "auto", "always", "off", NULL };
++static const char *const k_quality[]   = { "custom", "basic", "standard", "high", "pro", NULL };
+ #endif
+ static const char *const k_ultrawide[] = { "off", "21:9", "32:9", "window", NULL };
+ static const char *const k_vehicle_detail[] = { "original", "far", "farthest", NULL };
+@@ -215,9 +216,50 @@ static xs_setting s_set[XS_COUNT] = {
+     [XS_INPUT_TOUCH_OPACITY] = SETTING_STEP("input.touch_opacity", XS_FLOAT, 0, RENV_TOUCH_OPACITY, 0.1, 1.0, 0.5, 0.1),
+     [XS_INPUT_TOUCH_SCALE]  = SETTING_STEP("input.touch_scale", XS_FLOAT, 0, RENV_TOUCH_SCALE, 0.6, 1.6, 1.0, 0.1),
+     [XS_INPUT_TOUCH_AUTO_GAS] = SETTING("input.touch_auto_gas", XS_BOOL, 0, RENV_TOUCH_AUTO_GAS, NULL, NULL, 0, 0, 0),
++    /* Not kept in the file: it is what the graphics rows it sets make
++     * (quality_now), and those are kept. */
++    [XS_GRAPHICS_QUALITY]   = SETTING("graphics.quality", XS_CHOICE, XS_VIRTUAL, RENV_COUNT, k_quality, NULL, 0, 0, 0),
+ #endif
+ };
+ 
++#if defined(__ANDROID__)
++/* ── the quality presets (Android) ──────────────────────────────────── */
++
++/* Each preset's rows, as choice indices: render scale (k_scale), aniso
++ * (k_aniso), AA (k_aa), UI scale (k_ui_scale), vehicle and scenery detail.
++ * Basic is already more than the Xbox showed: its resolution, but the whole
++ * screen, FXAA and the 2D art at twice its size. */
++enum { Q_ROWS = 6 };
++static const xs_id k_quality_rows[Q_ROWS] = {
++    XS_GRAPHICS_RENDER_SCALE, XS_GRAPHICS_ANISO, XS_GRAPHICS_AA, XS_GRAPHICS_UI_SCALE,
++    XS_GRAPHICS_VEHICLE_DETAIL, XS_GRAPHICS_SCENERY_DETAIL,
++};
++static const unsigned char k_quality_set[5][Q_ROWS] = {
++    { 0 },                      /* custom: nothing */
++    { 0, 2, 1, 1, 0, 0 },       /* basic:    1x,   4x aniso, FXAA */
++    { 1, 2, 1, 1, 0, 0 },       /* standard: 1.5x, 4x aniso, FXAA (the Android defaults) */
++    { 2, 3, 1, 1, 1, 1 },       /* high:     2x,   8x aniso, FXAA, far detail */
++    { 3, 4, 2, 1, 1, 1 },       /* pro:      3x,  16x aniso, SMAA, far detail */
++};
++
++/* The preset the rows (their values, or with `defs` their defaults) make;
++ * 0 when they make none. */
++static int quality_now(int defs)
++{
++    int q, k;
++    for (q = 1; q < 5; q++) {
++        for (k = 0; k < Q_ROWS; k++) {
++            const xs_setting *s = &s_set[k_quality_rows[k]];
++            if ((int)(defs ? s->def : s->value) != k_quality_set[q][k])
++                break;
++        }
++        if (k == Q_ROWS)
++            return q;
++    }
++    return 0;
++}
++#endif
++
+ /* The power mode is two knobs. Balanced's spin lead is 8 ms on every host.
+  * 2 ms on Linux saved ~2 W on the Steam Deck but ran the executor at
+  * 2.4 GHz instead of 3.5 and doubled its late flips (BO-110 A/B, arm C). */
+@@ -433,6 +475,24 @@ static void apply(xs_id id)
+         xbox_SettingEnvString(s, v, buf, sizeof buf);
+         recomp_env_set(s->env, buf);
+     }
++#if defined(__ANDROID__)
++    if (id == XS_GRAPHICS_QUALITY) {
++        /* A preset: its rows, each kept in the file as if set by hand. */
++        int q = (int)v, k;
++        if (q > 0 && q < 5)
++            for (k = 0; k < Q_ROWS; k++)
++                xbox_SettingSet(k_quality_rows[k], k_quality_set[q][k]);
++        s_set[XS_GRAPHICS_QUALITY].user = 0;
++        s_set[XS_GRAPHICS_QUALITY].value = quality_now(0);
++        return;
++    }
++    {
++        int k;
++        for (k = 0; k < Q_ROWS; k++)
++            if (k_quality_rows[k] == id)
++                s_set[XS_GRAPHICS_QUALITY].value = quality_now(0);
++    }
++#endif
+     switch (id) {
+     case XS_DISPLAY_OVERSCAN:
+         nv2a_present_set_overscan((int)v);
+@@ -983,6 +1043,12 @@ void xbox_SettingsFinish(void)
+         s_set[XS_POWER_MODE].def = power_from(
+             s_game_pacing[0] ? s_game_pacing : NULL, s_game_lead[0] ? s_game_lead : NULL);
+     }
++#if defined(__ANDROID__)
++    /* The preset the rows make now, and the one their defaults make (the
++     * game's pick for this device, main.c): what Reset returns to. */
++    s_set[XS_GRAPHICS_QUALITY].value = quality_now(0);
++    s_set[XS_GRAPHICS_QUALITY].def = quality_now(1);
++#endif
+     for (i = 0; i < XS_COUNT; i++) {
+         s_set[i].launch = s_set[i].value;
+         if (s_set[i].locked)
+diff --git a/src/overlay/xbox_settings.h b/src/overlay/xbox_settings.h
+index 58ef66d..dfe2a0c 100644
+--- a/src/overlay/xbox_settings.h
++++ b/src/overlay/xbox_settings.h
+@@ -115,6 +115,7 @@ typedef enum {
+     XS_INPUT_TOUCH_OPACITY,
+     XS_INPUT_TOUCH_SCALE,
+     XS_INPUT_TOUCH_AUTO_GAS,
++    XS_GRAPHICS_QUALITY,     /* custom / basic / standard / high / pro: sets the graphics rows at once */
+ #endif
+     XS_COUNT
+ } xs_id;
 diff --git a/src/platform/android_host.c b/src/platform/android_host.c
 index 5046301..d073aec 100644
 --- a/src/platform/android_host.c

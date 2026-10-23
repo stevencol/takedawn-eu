@@ -3069,6 +3069,39 @@ static void set_quit_after(const char *seconds)
 }
 #endif
 
+#if defined(__ANDROID__)
+/* A modest phone, which starts on the Basic preset (the Xbox's 640x480):
+ * under 3.5 GB of memory (a "4 GB" phone reports about 3.6), or no core
+ * reaching 2.2 GHz. Said once in the log. */
+static int android_tier_basic(void)
+{
+    static int tier = -1;
+    long pages = sysconf(_SC_PHYS_PAGES), page = sysconf(_SC_PAGESIZE);
+    double gb = pages > 0 && page > 0 ? (double)pages * (double)page / 1073741824.0 : 0.0;
+    long top = 0;
+    int i;
+
+    if (tier >= 0)
+        return tier;
+    for (i = 0; i < 64; i++) {
+        char path[96];
+        long f = 0;
+        FILE *fp;
+        snprintf(path, sizeof path, "/sys/devices/system/cpu/cpu%d/cpufreq/cpuinfo_max_freq", i);
+        fp = fopen(path, "r");
+        if (!fp)
+            continue;
+        if (fscanf(fp, "%ld", &f) == 1 && f > top)
+            top = f;
+        fclose(fp);
+    }
+    tier = (gb > 0.0 && gb < 3.5) || (top > 0 && top < 2200000);
+    fprintf(stderr, "[QUALITY] %.1f GB, fastest core %.2f GHz: the %s preset to start\n",
+            gb, (double)top / 1e6, tier ? "Basic" : "Standard");
+    return tier;
+}
+#endif
+
 #if defined(BO3_PGO_GENERATE) && defined(__ANDROID__)
 /* The counting build's writer (main): the counters so far, every 30 s. */
 static void *pgo_writer(void *arg)
@@ -3698,8 +3731,9 @@ int main(int argc, char **argv)
     env_default("RECOMP_PRESENT_FULLSCREEN", "1");
     /* 960x720 inside: the 640x480 picture is too coarse on a 1080-row
      * handheld panel (the user's verdict on the Retroid Pocket 5); 2 and 1
-     * are in the overlay. */
-    env_default("RECOMP_RENDER_SCALE", "1.5");
+     * are in the overlay. The Standard preset (Graphics > Quality); a
+     * modest phone starts on Basic, the Xbox's own 640x480 (android_tier). */
+    env_default("RECOMP_RENDER_SCALE", android_tier_basic() ? "1" : "1.5");
     /* The same picture as the other platforms (the owner's decision of
      * 2026-10-12): 16:9 with the HUD fix, the linear filter, sharpening
      * 0.30, and Menu/HUD upscaling 2x (nv2a_texscale_held() is 0 here since
