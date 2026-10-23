@@ -258,8 +258,8 @@ public class DriverActivity extends Activity {
                     + legacy.getName() + " comes first under Automatic");
         }
         text(adreno
-                ? "If the game doesn't reach its first frames with a driver you picked, or the"
-                  + " driver stops working later, the next start goes back to Automatic."
+                ? "If the game doesn't reach its first frames with a driver, or the driver"
+                  + " stops working later, the next start goes to the built-in one."
                 : "Driver files work on Adreno graphics only. This device uses its own driver.",
                 13, 0xFF909090);
         first.requestFocus();

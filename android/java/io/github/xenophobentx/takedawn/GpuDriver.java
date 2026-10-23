@@ -109,7 +109,7 @@ final class GpuDriver {
         if ("auto".equals(ch) && userFile(c) != null && isAdreno()) {
             return "the file in the driver folder (" + userFile(c).getName() + ")";
         }
-        if (hasBundled(c) && isAdreno()) {
+        if (hasBundled(c) && isAdreno() && ("bundled".equals(ch) || sys < VULKAN_1_3)) {
             String mesa = prefs(c).getString("bundledMesa", null);
             return "built-in Turnip" + (mesa != null ? " (Mesa " + mesa + ")" : "");
         }
@@ -138,7 +138,9 @@ final class GpuDriver {
      * bundled driver (on an Adreno) or the device's own.
      */
     static String fallback(Context c) {
-        if (isAdreno() && userFile(c) != null) {
+        // Automatic would load the same driver again: a file in the driver
+        // folder, or the device's own where it has Vulkan 1.3 (choose()).
+        if (isAdreno() && (userFile(c) != null || systemVulkanVersion(c) >= VULKAN_1_3)) {
             return hasBundled(c) ? "bundled" : "system";
         }
         return "auto";
@@ -464,20 +466,25 @@ final class GpuDriver {
             }
         }
         if (d == null) {
-            // Automatic: the driver the app came with, wherever there is an
-            // Adreno to drive (the one this program is tested with); the
-            // device's own is a choice, not the default. A forced "system"
-            // that is too old still gets Turnip from the override "bundled".
-            // Never on a GPU that is not an Adreno (a choice of "bundled"
-            // left from before is Automatic there).
+            // Automatic: the device's own driver wherever it has Vulkan 1.3,
+            // so a phone of any make runs on what it ships with; the driver
+            // the app came with only on an Adreno whose own driver is older
+            // (the Retroid Pocket 5's stops at 1.1), or when chosen. A forced
+            // "system" that is too old still gets Turnip from the override
+            // "bundled". Never on a GPU that is not an Adreno (a choice of
+            // "bundled" left from before is Automatic there).
             boolean wantBundled = "bundled".equals(override)
-                    || (isAdreno() && !"system".equals(ch));
+                    || (isAdreno() && !"system".equals(ch)
+                        && ("bundled".equals(ch) || sys < VULKAN_1_3));
             if (wantBundled && hasBundled(c)) {
                 d = new GpuDriver(c.getApplicationInfo().nativeLibraryDir, BUNDLED,
                         "the Mesa Turnip driver in the app (the device's own is Vulkan "
                         + versionString(sys) + ")");
             } else {
                 d = new GpuDriver(null, null, sysWhat);
+                // A device driver that does not reach the first frames sends
+                // the next start to the bundled one (fallback()).
+                d.trial = override == null && hasBundled(c) && isAdreno();
             }
         }
         d.note = note;
