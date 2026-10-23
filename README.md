@@ -233,7 +233,11 @@ an undistorted HUD, ultrawide, and a settings menu you can open mid-race.
 | Mac (Apple silicon, macOS 13 or newer) | [`Takedawn-0.2.1-macos-arm64.dmg`](https://github.com/xenophobentx/takedawn/releases/download/v0.2.1/Takedawn-0.2.1-macos-arm64.dmg) | about 20 MB |
 | Windows (64-bit) | [`Takedawn-0.2.1-windows-x64-setup.exe`](https://github.com/xenophobentx/takedawn/releases/download/v0.2.1/Takedawn-0.2.1-windows-x64-setup.exe) | about 18 MB |
 | Linux and Steam Deck (x86-64) | [`Takedawn-0.2.1-linux-x86_64.AppImage`](https://github.com/xenophobentx/takedawn/releases/download/v0.2.1/Takedawn-0.2.1-linux-x86_64.AppImage) | about 24 MB |
-| Android (arm64, Snapdragon), experimental | [`Takedawn-0.2.1-android-arm64.apk`](https://github.com/xenophobentx/takedawn/releases/download/v0.2.1/Takedawn-0.2.1-android-arm64.apk) | about 14 MB |
+| Android (arm64), PAL disc | [`Takedawn-0.2.3-eu-android-arm64.apk`](https://github.com/stevencol/takedawn-eu/releases/download/v0.2.3-eu/Takedawn-0.2.3-eu-android-arm64.apk) | about 14 MB |
+
+In takedawn-eu only the Android APK is built for the European disc. The Mac,
+Windows and Linux files above are the original project's, for the North
+American disc.
 
 All files are on the [releases page][releases], with a `SHA256SUMS` file and a
 `BUILDINFO` file that says what each was built from. To check a download, run
@@ -301,9 +305,8 @@ report zip from Advanced > Create bug report helps a lot.
 | Other PCs with NVIDIA graphics | Not tested |
 | Linux PCs with Intel graphics | Not tested |
 | Intel Macs | Not supported. There is no Intel build |
-| Android devices without a Snapdragon chip (Mali, PowerVR, Xclipse graphics) | Not supported yet. If the device's own driver supports Vulkan 1.3, it might work |
+| Android devices without a Snapdragon chip (Mali, PowerVR, Xclipse graphics) | Run on the device's own driver when it has Vulkan 1.3. A Galaxy A34 (Mali-G68) holds 60 fps with takedawn-eu; others not tested |
 | Samsung Galaxy S23 FE (Exynos 2200, Xclipse graphics) | Starts on the phone's own driver, but slow: about 30 fps even at render scale 1 |
-| An Adreno device's own driver instead of the bundled one | Not supported yet. If it supports Vulkan 1.3, it might work; the bundled driver is the default |
 
 ### System requirements
 
@@ -317,8 +320,9 @@ report zip from Advanced > Create bug report helps a lot.
   memory, which adds up over a long session.
 - Linux and Steam Deck: x86-64, glibc 2.30 or newer and a graphics driver
   with Vulkan 1.3. The AppImage needs no FUSE library.
-- Android: Android 13 or newer, 64-bit, a Snapdragon chip with Adreno
-  graphics, and a built-in or connected controller.
+- Android: Android 13 or newer, 64-bit, a graphics driver with Vulkan 1.3
+  (the phone's own) or an Adreno GPU (the bundled Turnip driver), and a
+  built-in or connected controller, or the touch controls.
 
 #### For full speed (60 fps)
 
@@ -332,7 +336,8 @@ whole game runs slower.
 - Graphics: Steam Deck class at render scale 1 or 2. Higher scales need a
   desktop card.
 - Mac: Apple silicon. Tested on M5 only.
-- Android: Snapdragon 865 or newer. Phones that throttle when warm can drop
+- Android: Snapdragon 865 or newer; with takedawn-eu a Dimensity 1080
+  (Galaxy A34) holds 60 too. Phones that throttle when warm can drop
   below 60.
 
 ## Quick start
@@ -531,9 +536,9 @@ root. You can choose the driver in three places: the second entry
 in the launcher, "Takedawn: graphics driver"; a button on the setup page; and
 the Graphics page of the settings while the game runs. The choices are:
 
-- Automatic (the default, and the one to use): the bundled Turnip on every
-  Adreno device, because that is the driver the game is tested with. On other
-  GPUs it is the device's own driver;
+- Automatic (the default, and the one to use): the device's own driver when
+  it offers Vulkan 1.3; the bundled Turnip on an Adreno device whose driver
+  offers less;
 - the bundled Turnip driver;
 - the device's own driver;
 - a driver file you pick (Adreno only).
@@ -545,8 +550,8 @@ can't run the game on your device.
 
 The driver is loaded before the game starts, so a change takes effect at the
 next start. The settings page has a "Restart now to use it" button. If the
-game doesn't reach its first frames with a driver you picked, or that driver
-stops working later, the next start switches back to Automatic and tells you.
+game doesn't reach its first frames with a driver, or that driver stops
+working later, the next start goes to the built-in one and tells you.
 
 An update only installs if the new APK is signed with the same key as the old
 one. Every release from this project is. To remove the app,
@@ -596,7 +601,7 @@ The first start uses defaults that suit modern screens:
 |---|---|
 | Mac, Windows, Linux desktop | Full screen, the game's 16:9 mode with the widescreen HUD fix, linear filter, render scale 3, SMAA, sharpening 30%, Menu and HUD upscaling 2x, texture sharpness Auto, vehicle detail Far, scenery detail Far |
 | Steam Deck, and any machine in a gamescope session | The same, with render scale 2 |
-| Android | Full screen, 16:9 with the widescreen HUD fix, render scale 1.5, FXAA, sharpening 30%, Menu and HUD upscaling 2x |
+| Android | Full screen, the picture at the screen's own shape (Ultrawide: Window) with the widescreen HUD fix, Quality Standard (render scale 1.5) or Basic (1x) on a modest phone, FXAA, sharpening 30%, Menu and HUD upscaling 2x, vsync, Battery saver |
 
 Once you change a setting, your choice sticks. 4:3, windowed mode and 1x are
 still in the menu. Everything else that changes the console's look
@@ -617,7 +622,7 @@ still in the menu. Everything else that changes the console's look
 | Speed units | mph, km/h | mph, as on the disc. km/h also changes distances to metres. Applies from the next race |
 | Widescreen HUD | On, Off | On. With 16:9, keeps the HUD in its 4:3 shape at the edges of the picture, and the menus 4:3 in the middle with the decoration across the screen. Applies from the next race |
 | Crash Nav map | Full width, 4:3 | Full width. Shown with Widescreen HUD on. In Crash Nav's Select Location, Full width spreads the map, its route and its markers across the screen like the frame around it. 4:3 keeps the map in the shape of the rest of the menu. Changes at once |
-| Ultrawide | Off, 21:9, 32:9, Window | Off. Needs Aspect ratio 16:9. Applies from the next race |
+| Ultrawide | Off, 21:9, 32:9, Window | Off; Window (the screen's own shape) on Android. Needs Aspect ratio 16:9. Applies from the next race |
 | Frame pacing | Automatic, Low latency, Smooth | Automatic: Smooth on a Steam Deck, Low latency elsewhere. Windows, Linux and Steam Deck. Smooth keeps one finished frame queued, so a late frame does not repeat the last one. It adds one refresh (16.7 ms at 60 Hz) of delay. On a variable-refresh display, or at a refresh far from 60 Hz, it acts like Low latency |
 | Score board | Original, Smooth | Original, as on the console. Smooth fades the dark plate behind the score together with its text |
 | Rival marker switch | Original, Farther | Original. The marker over a rival is a small arrow far away and the race position (4th) near. Original changes at 35 m, checked twice a second. Farther shows the position from 60 m and the arrow again past 75 m, checked every frame, so it changes earlier and does not flip back and forth. Changes at once |
@@ -626,7 +631,8 @@ still in the menu. Everything else that changes the console's look
 
 | Row | Choices | Default and notes |
 |---|---|---|
-| Render scale (restart) | 1x to 4x; on Android also 1.5x | 3x, 2x on a Steam Deck, 1.5x on Android. 1x is 640x480, 2x is 1280x960, 3x is 1920x1440, 4x is 2560x1920 |
+| Quality (Android only) | Custom, Basic, Standard, High, Pro | Picked at the first start: Basic on a phone under 3.5 GB or without a 2.2 GHz core, else Standard. Sets the rows below at once: Basic 1x with FXAA, Standard 1.5x, High 2x with 8x aniso and far detail, Pro 3x with SMAA and 16x aniso. A row changed by hand makes it Custom |
+| Render scale (restart) | 1x to 4x; on Android also 1.5x | 3x, 2x on a Steam Deck, 1.5x on Android (1x on a modest phone). 1x is 640x480, 2x is 1280x960, 3x is 1920x1440, 4x is 2560x1920 |
 | Anisotropic filtering | Off, 2x to 16x | 8x. 4x on Android |
 | Anti-aliasing | Off, FXAA, SMAA | SMAA, FXAA on Android. Both work on the finished frame. SMAA is cleaner and costs a little more |
 | Sharpening | 0 to 100% | 30% |
@@ -689,7 +695,7 @@ of the picture.
 
 | Row | Choices | Default and notes |
 |---|---|---|
-| Power mode | Balanced, Battery saver, Auto; on a Mac also Maximum | Balanced. Battery saver uses less power and can show an occasional small dip. Auto watches the frame times and only works harder when frames start to arrive late |
+| Power mode | Balanced, Battery saver, Auto; on a Mac also Maximum | Balanced; Battery saver on Android, where the spin bought no frames once the CPU work was cut. Battery saver uses less power and can show an occasional small dip. Auto watches the frame times and only works harder when frames start to arrive late |
 
 Maximum busy-waits all the time. In measurements it was no steadier than
 Balanced on the Steam Deck and the Mac and worse on Windows. It also uses more
@@ -897,9 +903,9 @@ if you are offered the choice.
 **Android: the start page says no usable graphics driver, or the game is very slow.**
 
 The game needs Vulkan 1.3. Open the graphics driver page from the launcher and
-choose Automatic. On a device without Adreno graphics the game uses the
-device's own driver. If that driver has no Vulkan 1.3, the game can only draw
-on the processor, which is far too slow to play.
+choose Automatic: the device's own driver when it has Vulkan 1.3, else the
+bundled Turnip on Adreno graphics. Without either, the game can only draw on
+the processor, which is far too slow to play.
 
 **The game hitches in the first races.**
 
@@ -999,8 +1005,7 @@ handled.
 
 ## What's next
 
-- Android: more devices (other Snapdragon handhelds, then non-Adreno GPUs
-  with Vulkan 1.3).
+- Android: more devices (other Snapdragon handhelds, more non-Adreno GPUs).
 - Texture packs: load replacement textures from a folder, for higher
   resolution art and mods.
 - iPad?
