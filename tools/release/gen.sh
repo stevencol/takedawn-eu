@@ -51,10 +51,11 @@ mkdir -p "$REPO/build/xr"
 mark="$REPO/build/xr/.gen-start"; : > "$mark"
 say "regen (regen.sh --disasm, patches and spin waits on)"
 start=$(date +%s)
-# The defaults, said out loud: an inherited PATCHES= or SPIN_WAITS= would
-# generate without them.
-( cd "$REPO" && env -u TRACE_FUNCS PATCHES="$REPO/config/patches.json" \
-      SPIN_WAITS="$REPO/config/spin_waits.json" nice -n "$NICE" bash ./regen.sh --disasm )
+# regen.sh's defaults: config/ for NTSC-U, the translated copies for another
+# release (tools/region/region.py). Unset, not named here: an inherited
+# PATCHES= or SPIN_WAITS= would generate without them, and naming config/
+# would hand another release the NTSC-U addresses.
+( cd "$REPO" && env -u TRACE_FUNCS -u PATCHES -u SPIN_WAITS nice -n "$NICE" bash ./regen.sh --disasm )
 say "regen took $(( $(date +%s) - start )) s"
 
 report() {  # <report file> <field>: "<field>/<sites listed>"
