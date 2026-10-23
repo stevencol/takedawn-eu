@@ -13,6 +13,92 @@ index 45c3334..1400069 100644
  
  /* Call the connected service routine while the line is up, from the frame
   * thread, the way the OHCI model delivers USB interrupts (ohci_call_isr):
+diff --git a/src/apu/apu_vp.c b/src/apu/apu_vp.c
+index c13aabc..63febe5 100644
+--- a/src/apu/apu_vp.c
++++ b/src/apu/apu_vp.c
+@@ -132,21 +132,74 @@ static float attenuate(uint16_t vol)
+  * Voice register accessors (read/write voice struct in RAM)
+  * ============================================================ */
+ 
++/* Where each voice's record lives on the host, translated once
++ * (mcpx_apu_phys) instead of at every register access: a voice frame reads
++ * and writes its records some hundred times a voice, and the translations
++ * were a quarter of the APU thread's time (a Snapdragon 8 Elite, a race).
++ * Dropped when VPVADDR moves or the physical map does
++ * (xbox_PhysicalMapGen). NULL: a record whose 128 bytes do not translate as
++ * one block, read through mcpx_apu_phys as before. Another thread may fill
++ * an entry at the same time; it writes the same pointer. */
++extern uint32_t xbox_PhysicalMapGen(void);
++static uint8_t *volatile s_voice_host[MCPX_HW_MAX_VOICES];
++static uint8_t           s_voice_bad[MCPX_HW_MAX_VOICES];
++static uint32_t s_voice_gen = 0xFFFFFFFFu, s_voice_base = 0xFFFFFFFFu;
++
++static uint8_t *voice_host(MCPXAPUState *d, uint16_t v)
++{
++    uint32_t base = d->regs[NV_PAPU_VPVADDR], gen = xbox_PhysicalMapGen();
++    uint8_t *h;
++
++    if (gen != s_voice_gen || base != s_voice_base) {
++        memset((void *)s_voice_host, 0, sizeof s_voice_host);
++        memset(s_voice_bad, 0, sizeof s_voice_bad);
++        s_voice_gen = gen;
++        s_voice_base = base;
++    }
++    if (v >= MCPX_HW_MAX_VOICES)
++        return NULL;
++    h = s_voice_host[v];
++    if (!h && !s_voice_bad[v]) {
++        hwaddr voice = base + (hwaddr)v * NV_PAVS_SIZE;
++        uint8_t *first = mcpx_apu_phys(voice);
++        if (mcpx_apu_phys(voice + NV_PAVS_SIZE - 4) == first + NV_PAVS_SIZE - 4)
++            s_voice_host[v] = h = first;
++        else
++            s_voice_bad[v] = 1;
++    }
++    return h;
++}
++
+ static uint32_t voice_get_mask(MCPXAPUState *d, uint16_t voice_handle,
+                                hwaddr offset, uint32_t mask)
+ {
+-    hwaddr voice = d->regs[NV_PAPU_VPVADDR] + voice_handle * NV_PAVS_SIZE;
+-    return (ldl_le_phys(address_space_memory, voice + offset) & mask) >>
+-           ctz32(mask);
++    uint8_t *h = offset + 4 <= NV_PAVS_SIZE ? voice_host(d, voice_handle) : NULL;
++    uint32_t x;
++    if (h)
++        memcpy(&x, h + offset, 4);
++    else
++        x = ldl_le_phys(address_space_memory,
++                        d->regs[NV_PAPU_VPVADDR] + voice_handle * NV_PAVS_SIZE + offset);
++    return (x & mask) >> ctz32(mask);
+ }
+ 
+ static void voice_set_mask(MCPXAPUState *d, uint16_t voice_handle,
+                            hwaddr offset, uint32_t mask, uint32_t val)
+ {
+-    hwaddr voice = d->regs[NV_PAPU_VPVADDR] + voice_handle * NV_PAVS_SIZE;
+-    uint32_t v = ldl_le_phys(address_space_memory, voice + offset) & ~mask;
+-    stl_le_phys(address_space_memory, voice + offset,
+-                v | ((val << ctz32(mask)) & mask));
++    uint8_t *h = offset + 4 <= NV_PAVS_SIZE ? voice_host(d, voice_handle) : NULL;
++    uint32_t v;
++    if (h) {
++        memcpy(&v, h + offset, 4);
++        v = (v & ~mask) | ((val << ctz32(mask)) & mask);
++        memcpy(h + offset, &v, 4);
++        return;
++    }
++    {
++        hwaddr voice = d->regs[NV_PAPU_VPVADDR] + voice_handle * NV_PAVS_SIZE;
++        v = ldl_le_phys(address_space_memory, voice + offset) & ~mask;
++        stl_le_phys(address_space_memory, voice + offset,
++                    v | ((val << ctz32(mask)) & mask));
++    }
+ }
+ 
+ /* ============================================================
 diff --git a/src/d3d/nv2a_pb_vulkan.c b/src/d3d/nv2a_pb_vulkan.c
 index 8f06338..1c0a73a 100644
 --- a/src/d3d/nv2a_pb_vulkan.c
@@ -157,6 +243,41 @@ index e2c1f0c..e2eee6b 100644
  
  typedef struct {
      uint32_t eax, ecx, edx, ebx, esi, edi, ebp, esp, seh_ebp, eflags;
+diff --git a/src/kernel/kernel_memory.c b/src/kernel/kernel_memory.c
+index 66582df..79c35cd 100644
+--- a/src/kernel/kernel_memory.c
++++ b/src/kernel/kernel_memory.c
+@@ -196,6 +196,22 @@ uint32_t xbox_PhysicalToGuest(uint32_t pa)
+     return owner ? ((owner - 1) << 12) | (pa & 0xFFFu) : 0;
+ }
+ 
++/* Bumped whenever what a physical address names may have changed: a page's
++ * record here, or the contiguous allocator's in-use map. A device model that
++ * keeps translations (the APU's voice records, apu_vp.c) drops them when it
++ * moves. */
++static volatile LONG g_phys_gen;
++
++uint32_t xbox_PhysicalMapGen(void)
++{
++    return (uint32_t)g_phys_gen;
++}
++
++void xbox_PhysicalMapChanged(void)
++{
++    InterlockedIncrement(&g_phys_gen);
++}
++
+ ULONG_PTR __stdcall xbox_MmGetPhysicalAddress(PVOID BaseAddress)
+ {
+     /*
+@@ -220,6 +236,7 @@ ULONG_PTR __stdcall xbox_MmGetPhysicalAddress(PVOID BaseAddress)
+         LONG was = g_phys_owner[pa >> 12];
+         if (was != owner) {
+             InterlockedExchange(&g_phys_owner[pa >> 12], owner);
++            xbox_PhysicalMapChanged();
+             /* RAM and window forms of one physical page both handed out:
+              * the record answers for the later one. Said a few times, since
+              * a model reading the earlier one gets the other bytes. */
 diff --git a/src/kernel/kernel_pacing.c b/src/kernel/kernel_pacing.c
 index 150d882..6a1aaf4 100644
 --- a/src/kernel/kernel_pacing.c
@@ -289,7 +410,7 @@ index 031c239..c8844d4 100644
  extern volatile uint32_t g_icall_trace_idx;
  extern volatile uint64_t g_icall_count;
 diff --git a/src/kernel/xbox_memory_layout.c b/src/kernel/xbox_memory_layout.c
-index 2fe5ce6..232a321 100644
+index 2fe5ce6..ae17da4 100644
 --- a/src/kernel/xbox_memory_layout.c
 +++ b/src/kernel/xbox_memory_layout.c
 @@ -2140,7 +2140,18 @@ uint32_t g_xbox_code_hi = 0;
@@ -386,11 +507,40 @@ index 2fe5ce6..232a321 100644
  
  /* ICALL trace ring buffer */
  volatile uint32_t g_icall_trace[16] = {0};
+@@ -4591,6 +4618,7 @@ static void contig_take(uint32_t first, uint32_t n)
+     uint32_t end = (first + n) * CONTIG_PAGE;
+ 
+     memset(&g_contig_used[first], 1, n);
++    xbox_PhysicalMapChanged();          /* kernel_memory.c */
+     g_contig_len[first] = n;
+     g_contig_pages_in_use += n;
+     if (g_contig_pages_in_use > g_contig_peak_pages)
+@@ -4723,6 +4751,7 @@ int xbox_ContiguousFree(uint32_t va)
+         return 0;
+     }
+     memset(&g_contig_used[first], 0, n);
++    xbox_PhysicalMapChanged();
+     g_contig_len[first] = 0;
+     g_contig_pages_in_use -= n;
+     if (first < g_contig_first_free)
 diff --git a/src/kernel/xbox_memory_layout.h b/src/kernel/xbox_memory_layout.h
-index 7b9c5e8..f19a957 100644
+index 7b9c5e8..07b0a4a 100644
 --- a/src/kernel/xbox_memory_layout.h
 +++ b/src/kernel/xbox_memory_layout.h
-@@ -343,6 +343,10 @@ void xbox_WatchInit(void);
+@@ -212,6 +212,12 @@ uint32_t xbox_ContiguousAllocatedBytes(void);
+  * (or claimed). Read without the arena lock; a device model's view. */
+ const volatile uint8_t *xbox_ContiguousPageMap(void);
+ uint32_t xbox_ContiguousInUseBytes(void);
++/* A count that moves whenever what a physical address names may have
++ * changed (the page map above, or a page's MmGetPhysicalAddress record):
++ * a device model's cached translations are stale once it moves
++ * (kernel_memory.c). */
++uint32_t xbox_PhysicalMapGen(void);
++void     xbox_PhysicalMapChanged(void);
+ 
+ int xbox_Nv2aMirrorFence(uint32_t device_ptr_va,
+                          uint32_t put_off, uint32_t get_ptr_off);
+@@ -343,6 +349,10 @@ void xbox_WatchInit(void);
  #  define RECOMP_TLS _Thread_local
  #endif
  
@@ -401,7 +551,7 @@ index 7b9c5e8..f19a957 100644
  /* SSE register storage, shared with the generated code. Defined in both this
   * header and templates/runtime/recomp_types.h -- a translation unit can end up
   * including both, so the guard keeps that from being a redefinition. Keep the
-@@ -433,7 +437,9 @@ extern uint32_t g_xbox_stack_size;
+@@ -433,7 +443,9 @@ extern uint32_t g_xbox_stack_size;
   * thread gets its own from xbox_AllocThreadTib() and points g_fs_base at
   * it. */
  #define XBOX_TIB_MAIN       0x00004000

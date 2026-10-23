@@ -35,6 +35,9 @@ Dimensity 1080:
 - **Smaller ring buffers on Android**, from what a race used; a phone's
   driver commits all of them (172 MB on the A34).
 - **A ring use line** in the log every 1800 frames (`[vulkan] rings ...`).
+- **The APU's voice records translated once** (`apu_vp.c`), dropped when the
+  physical map moves (`xbox_PhysicalMapGen`): the translations were a quarter
+  of the APU thread, now about half that.
 - The black screen on returning to the app: no surface is made while the
   window is minimised or has no native window (`fb_present_vulkan.c`).
 
