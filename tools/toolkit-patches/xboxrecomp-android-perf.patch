@@ -195,7 +195,7 @@ index 8f06338..2d63383 100644
          s_pa.flip += now_ns() - t_flip0;
          if (++s_pa.n == 300) {
 diff --git a/src/kernel/kernel_bridge.c b/src/kernel/kernel_bridge.c
-index aac02db..1a9373e 100644
+index aac02db..c7d9b75 100644
 --- a/src/kernel/kernel_bridge.c
 +++ b/src/kernel/kernel_bridge.c
 @@ -61,10 +61,14 @@
@@ -213,6 +213,23 @@ index aac02db..1a9373e 100644
  extern ptrdiff_t g_xbox_mem_offset;
  
  /* Dispatch table lookup (for function pointer args) */
+@@ -3318,6 +3322,16 @@ static int kernel_drain_dpcs_before(int *ran, uint64_t vbl_due)
+         LeaveCriticalSection(&g_dpc_lock);
+         if (d.dpc && d.t_ns)
+             dpc_stats_ran(d.t_ns);
++        /* What was posted for the gate's holder runs before the DPC, as a
++         * pending interrupt does on the console. Without this a vblank
++         * posted while a title thread held the gate, which let go before
++         * running it (its release point found the gate already taken: by
++         * this thread), stayed posted while the D3D vblank DPC ran here:
++         * the DPC acks PCRTC and spins on PMC_INTR_0, guest code with no
++         * safe point in it, the posted vblank kept g_vbl_tick_busy up, so
++         * the vblank-ack thread would not clear the bit, and the timer
++         * thread spun in the DPC for good (a Poco, after a restart at 3x). */
++        xbox_IrqSafePoint();
+         if (d.dpc && kernel_run_dpc(d.dpc, d.arg1, d.arg2, XBOX_PROF_DPC_QUEUE))
+             (*ran)++;
+         xbox_DispatchGateLeave();
 diff --git a/src/kernel/kernel_hal.c b/src/kernel/kernel_hal.c
 index e2c1f0c..e2eee6b 100644
 --- a/src/kernel/kernel_hal.c

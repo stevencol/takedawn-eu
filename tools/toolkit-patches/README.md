@@ -38,6 +38,13 @@ Dimensity 1080:
 - **The APU's voice records translated once** (`apu_vp.c`), dropped when the
   physical map moves (`xbox_PhysicalMapGen`): the translations were a quarter
   of the APU thread, now about half that.
+- **A freeze after Apply and restart** (`kernel_bridge.c`): a vblank posted
+  for a title thread that let go of the gate stayed posted while the D3D
+  vblank DPC spun on the timer thread, waiting for an ack the vblank-ack
+  thread would not give with the vblank undelivered. Posted interrupts now
+  run before each DPC, as a pending interrupt does on the console.
+- **Graphics > Quality** (`xbox_settings.c`, `overlay_ui.cpp`): Basic,
+  Standard, High and Pro set the graphics rows at once.
 - The black screen on returning to the app: no surface is made while the
   window is minimised or has no native window (`fb_present_vulkan.c`).
 
