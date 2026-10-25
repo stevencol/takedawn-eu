@@ -106,6 +106,12 @@ int bo3_install_main(int argc, char **argv);
 #define BO3_DATA_NO_MOVE  4
 int bo3_data_enter(const char *data_arg, int xbe_named, int flags);
 
+/* 1 and the path of the other release's program (in `prog`) when the default.xbe that
+ * would be started is of the other release and that program is beside this one;
+ * else 0. main() starts it in place of this one (the same arguments). */
+int bo3_data_other_program(const char *data_arg, int xbe_named, const char *xbe_arg,
+                           char *prog, unsigned prog_n);
+
 /* --data-status [--data <dir>]: where the data is (or would be put) and
  * whether it is whole, without starting anything; what the setup window
  * asks first. On stdout, in the installer's protocol:

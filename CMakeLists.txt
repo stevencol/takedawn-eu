@@ -108,6 +108,11 @@ elseif(BO3_PGO_USE)
         -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date -Wno-backend-plugin)
 endif()
 
+# The recompiled C of the release being built (regen.sh, BO3_GEN_DIR there too):
+# one folder per release lets the NTSC-U and the PAL program be built side by side.
+set(BO3_GEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/game/recomp/gen" CACHE PATH
+    "The folder of the generated recomp_*.c and region_map.h")
+
 add_subdirectory(${XBOXRECOMP_DIR} ${CMAKE_BINARY_DIR}/xboxrecomp)
 
 add_subdirectory(src/game)

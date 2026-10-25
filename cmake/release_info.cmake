@@ -46,7 +46,7 @@ endif()
 # regen.sh names it in gen/region_map.h (tools/region/region.py apply); no
 # generated code yet, or one from before that file: NTSC-U.
 set(BO3_BUILD "ntsc-u-retail")
-set(_region_h "${BO3_ROOT}/src/game/recomp/gen/region_map.h")
+set(_region_h "${BO3_GEN_DIR}/region_map.h")
 if(EXISTS "${_region_h}")
     file(STRINGS "${_region_h}" _b REGEX "^#define BO3_BUILD_ID \"[a-z0-9-]+\"$")
     if(_b MATCHES "\"([a-z0-9-]+)\"")
@@ -154,7 +154,7 @@ endif()
 # refuses a tree without it, one made from other inputs, one whose files
 # changed since, and one without the patches; any other build only repeats
 # what the stamp says.
-set(_gen "${BO3_ROOT}/src/game/recomp/gen")
+set(_gen "${BO3_GEN_DIR}")
 set(BO3_GEN_TREE "unstamped")
 set(BO3_GEN_PATCHES "unknown")
 set(_stamp_key "")

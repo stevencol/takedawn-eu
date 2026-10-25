@@ -32,14 +32,16 @@ public class StartActivity extends Activity {
         // MTP shows where to copy to.
         game.mkdirs();
         GpuDriver.userDir(this).mkdirs();
-        if (!dataComplete(files)) {
+        if (!dataComplete(this, files)) {
             // No data yet, a copy made by hand that is not checked, or an
             // install for another build: the setup page (SetupActivity).
             startActivity(new Intent(this, SetupActivity.class));
             finish();
             return;
         }
-        if (!GpuDriver.usable(this)) {
+        // The legacy build is for devices without Vulkan 1.3: the processor
+        // is what it runs on there, so no page asks first.
+        if (!BuildInfo.LEGACY && !GpuDriver.usable(this)) {
             // No silent fall to the CPU rasteriser at a few frames a second.
             canStartAnyway = true;
             page("This device's graphics driver has Vulkan "
@@ -57,14 +59,14 @@ public class StartActivity extends Activity {
     }
 
     /** The installer's marker is there and names this program's disc manifest. */
-    static boolean dataComplete(File files) {
+    static boolean dataComplete(android.content.Context c, File files) {
         File mark = new File(files, ".complete");
         if (!mark.isFile() || !new File(new File(files, GameActivity.GAME_DIR), "default.xbe").isFile()) {
             return false;
         }
         try (java.io.InputStream in = new java.io.FileInputStream(mark)) {
             String t = new String(GpuDriver.readAll(in), java.nio.charset.StandardCharsets.UTF_8);
-            return t.contains(BuildInfo.MANIFEST_ID);
+            return t.contains(Region.manifest(Region.lib(c)));
         } catch (Exception e) {
             return false;
         }

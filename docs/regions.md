@@ -60,6 +60,27 @@ The overlay's fonts, sprites and sounds are the same bytes in both releases.
 The PAL manifest was made from an extracted folder, not a disc image; make it
 again with `tools/release/make_manifest.py` from an image when there is one.
 
+## Both releases at once
+
+One program is built for one release (its addresses are compile-time), so a
+machine that plays either disc carries two:
+
+- `BO3_GEN_DIR` (CMake, and the same variable for `regen.sh`, with `BO3_XBE`
+  and `BO3_XR_OUT`) names the folder of the generated C. The usual
+  `src/game/recomp/gen` is the one of before; a second release goes in
+  `src/game/recomp/gen.ntsc-u` (git-ignored) from its own default.xbe.
+- `-DBO3_EXE_SUFFIX=-pal-retail` / `-ntsc-u-retail` names the programs
+  `burnout3-pal-retail` and `burnout3-ntsc-u-retail`, side by side in `bin/`.
+  Started on the other release's disc, either one reads the region in the
+  certificate of that `default.xbe` (1 North America, 4 Europe) and starts
+  the other (`[REGION]` in the log); a program without its id in its name
+  (`burnout3`) hands nothing over.
+- Android: `BO3_ANDROID_GEN2=<the second tree> tools/android/build-apk.sh`
+  builds both and packs `libmain_pal.so` and `libmain_ntsc.so`; the app loads
+  the one of the disc under its files folder (`Region.java`), and before a
+  disc is there the setup page has a button to say which release it is.
+  A build without `BO3_ANDROID_GEN2` is the one `libmain.so` of before.
+
 ## Known differences to check
 
 - Language: the runtime reports English (`XC_LANGUAGE` 1) and NTSC-M 60 Hz,

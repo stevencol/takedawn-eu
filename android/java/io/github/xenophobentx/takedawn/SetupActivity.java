@@ -168,6 +168,21 @@ public class SetupActivity extends Activity {
                 + " disc was extracted to (the one with default.xbe in it). The image or"
                 + " folder is only read.",
                 13, 0xFF909090);
+        if (Region.both() && Region.ofDisc(GameActivity.filesDir(this)) == null) {
+            // No disc here yet: which release's program checks it. The other
+            // library needs a process of its own, so the page starts again.
+            final String now = Region.lib(this);
+            button("Disc: " + Region.name(now) + ". Tap if yours is " + Region.name(Region.other(this)),
+                    new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    Region.choose(SetupActivity.this, Region.other(SetupActivity.this));
+                    startActivity(new Intent(SetupActivity.this, StartActivity.class)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    finish();
+                    android.os.Process.killProcess(android.os.Process.myPid());
+                }
+            });
+        }
         button("Licences", new View.OnClickListener() {
             @Override public void onClick(View v) {
                 startActivity(new Intent(SetupActivity.this, LicensesActivity.class));
@@ -176,7 +191,7 @@ public class SetupActivity extends Activity {
         int st;
         try {
             System.loadLibrary("SDL2");
-            System.loadLibrary("main");
+            System.loadLibrary(Region.lib(this));
             about = nativeAbout().split("\n", -1);
             WANT = about[1];
             st = nativeState(root);

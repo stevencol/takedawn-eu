@@ -6,7 +6,7 @@ project(burnout3_game C)
 # got wrong is replaced. Everything else is generated (gen/, gitignored).
 
 file(GLOB RECOMP_GEN_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/recomp/gen/recomp_*.c"
+    "${BO3_GEN_DIR}/recomp_*.c"
 )
 
 if(ANDROID)
@@ -216,7 +216,7 @@ endif()
 target_include_directories(burnout3 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/recomp
-    ${CMAKE_CURRENT_SOURCE_DIR}/recomp/gen
+    ${BO3_GEN_DIR}
     ${XBOXRECOMP_DIR}/src
     ${XBOXRECOMP_DIR}/src/kernel
     # The template runtime headers, not a local copy: BO3's old copy had
@@ -321,6 +321,17 @@ if(BO3_RELEASE AND NOT ANDROID)
             BUILD_WITH_INSTALL_RPATH ON
             INSTALL_RPATH "\$ORIGIN/../lib")
     endif()
+endif()
+
+# Two releases side by side (NTSC-U and PAL): "-ntsc-u-retail" / "-pal-retail" here
+# names the program burnout3<suffix>, and a program with its build id in its name
+# hands a disc of the other release to the one beside it (main.c, [REGION]).
+set(BO3_EXE_SUFFIX "" CACHE STRING "Appended to the program's name (the build id, for the two-release folder)")
+if(BO3_EXE_SUFFIX AND ANDROID)
+    # libmain_pal.so, libmain_ntsc.so: one app with both (tools/android/build-apk.sh).
+    set_target_properties(burnout3 PROPERTIES OUTPUT_NAME "main${BO3_EXE_SUFFIX}")
+elseif(BO3_EXE_SUFFIX)
+    set_target_properties(burnout3 PROPERTIES OUTPUT_NAME "burnout3${BO3_EXE_SUFFIX}")
 endif()
 
 # bin/ beside the game data by default; a second build tree (a sanitizer

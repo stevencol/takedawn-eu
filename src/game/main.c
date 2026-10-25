@@ -55,6 +55,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#if defined(_WIN32)
+#include <process.h>      /* _spawnv: the other release's program */
+#endif
 #include <math.h>
 #include <time.h>
 #include <stdbool.h>
@@ -3305,6 +3309,43 @@ int main(int argc, char **argv)
      * name are moved (in bo3_data_enter): a start that runs no title, and
      * the bug report, move nothing. */
     bo3_user_dirs_names();
+    /* The disc may be the other release's (NTSC-U or PAL): its own program,
+     * which sits beside this one, runs it. Only a program named
+     * burnout3-<build id> does this (CMake BO3_EXE_SUFFIX). */
+#if !defined(__ANDROID__)
+    if (!bug_report && !sb_build) {
+        char other[1200];
+        if (bo3_data_other_program(data_arg, xbe_named, s_xbe_path, other, sizeof other)) {
+            fprintf(stderr, "[REGION] this disc is of the other release: starting %s\n", other);
+            fflush(stderr);
+#if defined(_WIN32)
+            {
+                /* _spawnv joins the arguments with spaces and no quotes: a path with a
+                 * space (the disc folder) would be cut in two. */
+                char **qa = (char **)calloc((size_t)argc + 1, sizeof *qa);
+                intptr_t rc2 = -1;
+                int k;
+                if (qa) {
+                    for (k = 0; k < argc; k++) {
+                        size_t n = strlen(argv[k]) + 3;
+                        qa[k] = (char *)malloc(n);
+                        if (!qa[k]) break;
+                        if (strpbrk(argv[k], " ") || !argv[k][0]) snprintf(qa[k], n, "\"%s\"", argv[k]);
+                        else snprintf(qa[k], n, "%s", argv[k]);
+                    }
+                    if (k == argc) rc2 = _spawnv(_P_WAIT, other, (const char *const *)qa);
+                    for (k = 0; k < argc && qa[k]; k++) free(qa[k]);
+                    free(qa);
+                }
+                return rc2 < 0 ? 1 : (int)rc2;
+            }
+#else
+            execv(other, argv);
+            fprintf(stderr, "[REGION] could not start it: %s\n", strerror(errno));
+#endif
+        }
+    }
+#endif
     {
         int rc, status_only = 0;
 #ifdef BO3_HAVE_SHADERBUILD

@@ -4,6 +4,7 @@
  */
 #include "install.h"
 #include "fatal.h"
+#include "guest_addr.h"     /* BO3_BUILD_PAL_RETAIL: which release this program is */
 
 #include <signal.h>
 #include <stdarg.h>
@@ -739,6 +740,65 @@ static int data_state(const char *data_arg, char *root, unsigned root_n, int *na
         return DATA_OK;
     }
     return DATA_MISSING;
+}
+
+/* The other release's program, when the disc that would be started is the
+ * other release's. One folder holds both programs, burnout3-<build id> each
+ * (CMake BO3_EXE_SUFFIX); the disc says which it is by the region of its
+ * default.xbe's certificate (1 North America, 4 Europe), the one place the
+ * releases differ in the header. */
+static int xbe_region(const char *path)
+{
+    unsigned char h[0x120], c[4];
+    unsigned long base, cert;
+    FILE *f = fopen(path, "rb");
+    int region = 0;
+
+    if (!f)
+        return 0;
+    if (fread(h, 1, sizeof h, f) == sizeof h && !memcmp(h, "XBEH", 4)) {
+        base = h[0x104] | h[0x105] << 8 | h[0x106] << 16 | (unsigned long)h[0x107] << 24;
+        cert = h[0x118] | h[0x119] << 8 | h[0x11A] << 16 | (unsigned long)h[0x11B] << 24;
+        if (cert > base && !fseek(f, (long)(cert - base + 0xA0), SEEK_SET) && fread(c, 1, 4, f) == 4)
+            region = c[0] | c[1] << 8 | c[2] << 16 | c[3] << 24;
+    }
+    fclose(f);
+    return region;
+}
+
+int bo3_data_other_program(const char *data_arg, int xbe_named, const char *xbe_arg,
+                           char *prog, unsigned prog_n)
+{
+    char root[1024], why[64], source[64], xbe[1200], self[1100];
+    const char *code, *own_id, *other_id, *at;
+    xr_install_marker mark;
+    int named, state, region, own_region;
+
+#if defined(BO3_BUILD_PAL_RETAIL)
+    own_region = 4; own_id = "pal-retail"; other_id = "ntsc-u-retail";
+#else
+    own_region = 1; own_id = "ntsc-u-retail"; other_id = "pal-retail";
+#endif
+    if (xbe_named) {
+        snprintf(xbe, sizeof xbe, "%s", xbe_arg);
+    } else {
+        state = data_state(data_arg, root, sizeof root, &named, &mark, &code, why, sizeof why,
+                           source, sizeof source);
+        (void)state;
+        snprintf(xbe, sizeof xbe, "%s/" GAME_DIR "/default.xbe", root);
+    }
+    region = xbe_region(xbe);
+    if (!region || region == own_region)
+        return 0;
+    /* This program's file name holds its build id: the other's is the same
+     * with the other id. A name without it (a developer's burnout3) hands
+     * nothing over. */
+    snprintf(self, sizeof self, "%s", recomp_exe_path());
+    at = strstr(self, own_id);
+    if (!at || (region != 1 && region != 4))
+        return 0;
+    snprintf(prog, prog_n, "%.*s%s%s", (int)(at - self), self, other_id, at + strlen(own_id));
+    return file_exists(prog);
 }
 
 int bo3_data_enter(const char *data_arg, int xbe_named, int flags)

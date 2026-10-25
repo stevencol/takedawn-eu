@@ -15,8 +15,8 @@
 #define BO3_GUEST_ADDR_H
 
 #if defined(__has_include)
-#  if __has_include("recomp/gen/region_map.h")
-#    include "recomp/gen/region_map.h"
+#  if __has_include("region_map.h")
+#    include "region_map.h"
 #  endif
 #endif
 

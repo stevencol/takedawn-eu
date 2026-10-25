@@ -61,6 +61,11 @@ public class GameActivity extends SDLActivity {
             // (The scaled 2D art stays in cache/, the toolkit's ui_scale store.)
             Os.setenv("RECOMP_RENDER_SHADER_CACHE", new File(getFilesDir(), "graphics").getAbsolutePath(), true);
             Os.setenv("RECOMP_ANDROID_LIB_DIR", getApplicationInfo().nativeLibraryDir, true);
+            if (BuildInfo.LEGACY) {
+                // No "the driver can't run the game" box: the processor is
+                // what the legacy build runs on (fb_present_sdl.c).
+                Os.setenv("RECOMP_NO_GPU_NOTE", "1", true);
+            }
             java.util.Map<String, String> env = readEnvFile(new File(files, "env.txt"));
             // A test script's variables (tools/android/scene-launch.sh): their
             // own file, used for this start only and removed, so a script
@@ -383,10 +388,12 @@ public class GameActivity extends SDLActivity {
         android.view.Window w = getWindow();
         w.addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
                 | android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        android.view.WindowManager.LayoutParams lp = w.getAttributes();
-        lp.layoutInDisplayCutoutMode =
-                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        w.setAttributes(lp);
+        if (android.os.Build.VERSION.SDK_INT >= 28) {   // the cutout: Android 9
+            android.view.WindowManager.LayoutParams lp = w.getAttributes();
+            lp.layoutInDisplayCutoutMode =
+                    android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            w.setAttributes(lp);
+        }
         w.getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
                 | android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -455,7 +462,8 @@ public class GameActivity extends SDLActivity {
         if (wi == null) {
             return;
         }
-        android.view.DisplayCutout dc = wi.getDisplayCutout();
+        android.view.DisplayCutout dc =
+                android.os.Build.VERSION.SDK_INT >= 28 ? wi.getDisplayCutout() : null;
         String v = dc == null ? "0,0,0,0"
                 : dc.getSafeInsetLeft() + "," + dc.getSafeInsetTop() + ","
                   + dc.getSafeInsetRight() + "," + dc.getSafeInsetBottom();
@@ -512,7 +520,9 @@ public class GameActivity extends SDLActivity {
      */
     private void requestDisplayMode() {
         try {
-            android.view.Display d = getDisplay();
+            // Activity.getDisplay is Android 11's.
+            android.view.Display d = android.os.Build.VERSION.SDK_INT >= 30 ? getDisplay()
+                    : getWindowManager().getDefaultDisplay();
             if (d == null) {
                 return;
             }
@@ -590,7 +600,7 @@ public class GameActivity extends SDLActivity {
 
     @Override
     protected String[] getLibraries() {
-        return new String[] { "SDL2", "main" };
+        return new String[] { "SDL2", Region.lib(this) };
     }
 
     // Landscape either way up, whatever SDL works out from the window size.

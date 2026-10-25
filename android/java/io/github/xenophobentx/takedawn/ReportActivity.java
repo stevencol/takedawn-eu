@@ -166,7 +166,7 @@ public class ReportActivity extends Activity {
             Os.setenv("RECOMP_RENDER_SHADER_CACHE", new File(getFilesDir(), "graphics").getAbsolutePath(), true);   // BO-208
             Os.setenv("RECOMP_ANDROID_LIB_DIR", getApplicationInfo().nativeLibraryDir, true);
             System.loadLibrary("SDL2");
-            System.loadLibrary("main");
+            System.loadLibrary(Region.lib(this));
             return nativeBugReport(note(page));
         } catch (Throwable e) {
             Log.e(GameActivity.TAG, "bug report: " + e);
@@ -179,8 +179,10 @@ public class ReportActivity extends Activity {
         StringBuilder s = new StringBuilder();
         s.append("Made from the Android start page; no game was running.\n");
         s.append("device: ").append(Build.MANUFACTURER).append(' ').append(Build.MODEL)
-                .append(" (").append(Build.DEVICE).append("), SoC ").append(Build.SOC_MANUFACTURER)
-                .append(' ').append(Build.SOC_MODEL).append(", Android ")
+                .append(" (").append(Build.DEVICE).append("), SoC ")
+                .append(Build.VERSION.SDK_INT >= 31 ? Build.SOC_MANUFACTURER + " " + Build.SOC_MODEL
+                                                    : Build.HARDWARE)
+                .append(", Android ")
                 .append(Build.VERSION.RELEASE).append(" (API ").append(Build.VERSION.SDK_INT)
                 .append(")\n");
         try {
@@ -206,7 +208,8 @@ public class ReportActivity extends Activity {
                     == InputDevice.SOURCE_GAMEPAD) {
                 s.append("pad: \"").append(d.getName()).append("\" ")
                         .append(String.format("%04x:%04x", d.getVendorId(), d.getProductId()))
-                        .append(d.isExternal() ? ", external\n" : ", built in\n");
+                        .append(Build.VERSION.SDK_INT < 29 ? "\n"
+                                : d.isExternal() ? ", external\n" : ", built in\n");
             }
         }
         if (page != null && !page.isEmpty()) {
@@ -234,6 +237,13 @@ public class ReportActivity extends Activity {
     private Uri toDownloads() {
         if (downloaded != null || archive == null) {
             return downloaded;
+        }
+        if (Build.VERSION.SDK_INT < 29) {
+            // MediaStore.Downloads is Android 10's; before it Downloads needs
+            // a storage permission this app does not ask for.
+            text.setText(text.getText() + "\n\nThis Android version has no copy to Downloads:"
+                    + " take the archive from the app's folder over USB.");
+            return null;
         }
         try {
             ContentValues v = new ContentValues();

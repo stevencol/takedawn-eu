@@ -185,7 +185,7 @@ def write(path, text):
 
 def apply(args):
     info = xbe_info(args.xbe)
-    header = os.path.join(ROOT, HEADER)
+    header = os.path.join(args.gen, "region_map.h") if args.gen else os.path.join(ROOT, HEADER)
     out = args.out
     os.makedirs(out, exist_ok=True)
     files = {
@@ -278,6 +278,8 @@ def main():
     a = sub.add_parser("apply")
     a.add_argument("--xbe", required=True)
     a.add_argument("--out", required=True)
+    a.add_argument("--gen", help="the generated-code folder the header goes in "
+                                 "(default src/game/recomp/gen)")
     args = ap.parse_args()
     {"export": export, "apply": apply}[args.cmd](args)
 

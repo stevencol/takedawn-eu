@@ -27,6 +27,16 @@
 #                      (out/takedawn-android-arm64-unsigned.apk): a release is
 #                      signed in a step of its own (tools/release/build-android.sh)
 #   TAKEDAWN_ANDROID_BUILD  0..999, the last three digits of versionCode
+#   BO3_ANDROID_GEN2   a second generated-code folder (another release's, made
+#                      with BO3_GEN_DIR=... BO3_XBE=... regen.sh): the APK then
+#                      holds both programs, libmain_pal.so and libmain_ntsc.so,
+#                      and the app runs the one of the disc it finds
+#                      (Region.java). Unset: the one libmain.so of before.
+#   BO3_ANDROID_PKG_SUFFIX  e.g. .legacy: a second app beside the usual one
+#                      (package io.github.xenophobentx.takedawn.legacy, its
+#                      own data), out/takedawn-android-arm64-legacy.apk; with
+#                      ANDROID_API=24 and its own BO3_ANDROID_DEPS and
+#                      BUILD_DIR, the Android 7 build
 #   BO3_LICENSES_DIR   the release's licence set (tools/release/common.sh
 #                      copy_licenses); packed as assets/licenses/ with the
 #                      texts of the Android-only parts (tools/android/licenses/,
@@ -89,8 +99,22 @@ TD="$D/turnip-a725"
 ADRENO=()
 [ -f "$D/adrenotools/lib/libadrenotools.a" ] && ADRENO=(-DXBOXRECOMP_ANDROID_ADRENOTOOLS="$D/adrenotools")
 
-echo "== native (NDK $(basename "$NDK"), android-$API, $ABI)"
-cmake -S "$(wp "$HERE")" -B "$(wp "$B")" -G Ninja -DCMAKE_BUILD_TYPE=Release \
+# The release a generated-code folder is of: its region_map.h names a build
+# (none: NTSC-U).
+gen_suffix() {
+  if grep -q 'BO3_BUILD_PAL_RETAIL' "$1/region_map.h" 2>/dev/null; then echo _pal; else echo _ntsc; fi
+}
+GEN1="$HERE/src/game/recomp/gen"
+GEN2="${BO3_ANDROID_GEN2:-}"
+SUF1=""; SUF2=""
+if [ -n "$GEN2" ]; then
+  [ -f "$GEN2/region_map.h" ] || { echo "BO3_ANDROID_GEN2: no region_map.h in $GEN2" >&2; exit 1; }
+  SUF1="$(gen_suffix "$GEN1")"; SUF2="$(gen_suffix "$GEN2")"
+  [ "$SUF1" != "$SUF2" ] || { echo "both generated trees are of the same release" >&2; exit 1; }
+fi
+
+native_build() {   # build dir, generated-code folder, library suffix
+  cmake -S "$(wp "$HERE")" -B "$(wp "$1")" -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_TOOLCHAIN_FILE="$(wp "$NDK/build/cmake/android.toolchain.cmake")" \
   -DANDROID_ABI=$ABI -DANDROID_PLATFORM=android-$API -DANDROID_STL=c++_shared \
   -DXBOXRECOMP_DIR="$(wp "$TK")" \
@@ -98,10 +122,16 @@ cmake -S "$(wp "$HERE")" -B "$(wp "$B")" -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH="$(wp "$D/SDL2");$(wp "$D/glslang")" \
   -DVulkan_INCLUDE_DIR="$(wp "$SYSROOT/usr/include")" \
   -DVulkan_LIBRARY="$(wp "$SYSROOT/usr/lib/aarch64-linux-android/$API/libvulkan.so")" \
-  -DBO3_BIN_DIR="$(wp "$B/lib")" \
+  -DBO3_BIN_DIR="$(wp "$1/lib")" -DBO3_GEN_DIR="$(wp "$2")" \
+  ${3:+-DBO3_EXE_SUFFIX="$3"} \
   ${ADRENO[@]+"${ADRENO[@]}"} \
-  "$@"
-cmake --build "$B" --target burnout3 -j"$JOBS"
+  "${@:4}"
+  cmake --build "$1" --target burnout3 -j"$JOBS"
+}
+echo "== native (NDK $(basename "$NDK"), android-$API, $ABI)"
+native_build "$B" "$GEN1" "$SUF1" "$@"
+B2="$B-2"
+[ -n "$GEN2" ] && native_build "$B2" "$GEN2" "$SUF2" "$@"
 
 OUT="$B/apk"
 rm -rf "$OUT"
@@ -129,6 +159,16 @@ REL_H="$B/src/game/release/bo3_release.h"
 MANIFEST_ID="$(sed -n 's/^#define BO3_MANIFEST_ID "\([0-9a-f]*\)".*/\1/p' "$REL_H" 2>/dev/null | head -1)"
 [ -n "$MANIFEST_ID" ] || { echo "no BO3_MANIFEST_ID in $REL_H" >&2; exit 1; }
 echo "   Takedawn $VNAME, versionCode $VCODE, disc manifest $MANIFEST_ID"
+# The libraries and the manifests they were built with, in the order of the
+# native builds: libmain alone, or main_pal and main_ntsc (Region.java).
+LIBS_JAVA='"main"'; MANIFESTS_JAVA="\"$MANIFEST_ID\""
+if [ -n "$GEN2" ]; then
+  MANIFEST_ID2="$(sed -n 's/^#define BO3_MANIFEST_ID "\([0-9a-f]*\)".*/\1/p' "$B2/src/game/release/bo3_release.h" | head -1)"
+  [ -n "$MANIFEST_ID2" ] || { echo "no BO3_MANIFEST_ID in the second build" >&2; exit 1; }
+  LIBS_JAVA="\"main$SUF1\", \"main$SUF2\""
+  MANIFESTS_JAVA="\"$MANIFEST_ID\", \"$MANIFEST_ID2\""
+  echo "   and the second release: main$SUF2, disc manifest $MANIFEST_ID2"
+fi
 mkdir -p "$OUT/gen/io/github/xenophobentx/takedawn"
 cat > "$OUT/gen/io/github/xenophobentx/takedawn/BuildInfo.java" <<JAVA
 package io.github.xenophobentx.takedawn;
@@ -138,6 +178,11 @@ final class BuildInfo {
     static final String VERSION = "$VNAME";
     /** The disc manifest the native library was built with (the installer's marker names it). */
     static final String MANIFEST_ID = "$MANIFEST_ID";
+    /** The native libraries (libmain, or one per release) and each one's disc manifest. */
+    static final String[] LIBS = { $LIBS_JAVA };
+    static final String[] MANIFESTS = { $MANIFESTS_JAVA };
+    /** The second app (BO3_ANDROID_PKG_SUFFIX=.legacy), for devices without Vulkan 1.3. */
+    static final boolean LEGACY = $([ "${BO3_ANDROID_PKG_SUFFIX:-}" = .legacy ] && echo true || echo false);
 }
 JAVA
 
@@ -177,7 +222,9 @@ echo "   $(ls "$AL" | wc -l | tr -d ' ') licence files in assets/licenses"
 
 "$BT/aapt2" link -o "$OUT/base.apk" -I "$JAR" --manifest "$HERE/android/AndroidManifest.xml" \
   --java "$OUT/gen" ${DEBUGGABLE:+--debug-mode} --version-code "$VCODE" --version-name "$VNAME" \
-  --min-sdk-version "$API" --target-sdk-version "$TARGET_API" -A "$OUT/assets" "$OUT/res.zip"
+  --min-sdk-version "$API" --target-sdk-version "$TARGET_API" -A "$OUT/assets" \
+  ${BO3_ANDROID_PKG_SUFFIX:+--rename-manifest-package "io.github.xenophobentx.takedawn$BO3_ANDROID_PKG_SUFFIX"} \
+  "$OUT/res.zip"
 
 echo "== java (SDL's activity, the start and game activities)"
 find "$D/SDL2/java" "$HERE/android/java" "$OUT/gen" -name '*.java' \
@@ -189,8 +236,9 @@ find "$OUT/classes" -name '*.class' | while read -r f; do wp "$f"; done > "$OUT/
 "$D8" --release --min-api "$API" --lib "$JAR" --output "$(wp "$OUT/dex")" @"$(wp "$OUT/classes.txt")"
 
 echo "== native libraries"
-cp "$B/lib/libmain.so" "$D/SDL2/lib/libSDL2.so" \
+cp "$B/lib/libmain$SUF1.so" "$D/SDL2/lib/libSDL2.so" \
    "$SYSROOT/usr/lib/aarch64-linux-android/libc++_shared.so" "$OUT/pack/lib/$ABI/"
+[ -n "$GEN2" ] && cp "$B2/lib/libmain$SUF2.so" "$OUT/pack/lib/$ABI/"
 if [ ${#ADRENO[@]} -gt 0 ]; then
   # libadrenotools opens its hooks from the app's native library directory.
   cp "$D/adrenotools/lib/libhook_impl.so" "$D/adrenotools/lib/libmain_hook.so" \
@@ -243,7 +291,7 @@ if [ ! -f "$KS" ]; then
   keytool -genkeypair -keystore "$KS" -storepass android -keypass android \
     -alias bo3 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=burnout3 debug" >/dev/null
 fi
-APK="$HERE/out/takedawn-android-arm64.apk"
+APK="$HERE/out/takedawn-android-arm64${BO3_ANDROID_PKG_SUFFIX:+-${BO3_ANDROID_PKG_SUFFIX#.}}.apk"
 "$APKSIGNER" sign --ks "$(wp "$KS")" --ks-pass pass:android --key-pass pass:android \
   --out "$(wp "$APK")" "$(wp "$OUT/aligned.apk")"
 ls -l "$APK"
