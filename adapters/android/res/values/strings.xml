@@ -1,5 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Takedawn</string>
-    <string name="driver_name">Takedawn: graphics driver</string>
+    <string name="setup_title">Takedawn: the game\'s data</string>
+    <string name="pick_image">Choose your Burnout 3: Takedown disc image</string>
+    <string name="pick_folder">Choose game folder… (a disc already extracted to a folder)</string>
+    <string name="cancel">Cancel</string>
+    <string name="stopping">Stopping after the file in hand…</string>
+    <string name="start">Start the game</string>
+    <string name="driver_auto">The graphics driver is chosen automatically.</string>
+    <string name="need_disc">Nothing of the game is in this app: its files come from your own disc. Make an image of it (an .iso from the Xbox or a PC drive that reads Xbox discs) and put the file on this device or its SD card, or choose the folder the disc was extracted to (the one with default.xbe in it). The image or folder is only read.</string>
+    <string name="region_btn">Disc: %1$s. Tap if yours is %2$s</string>
+    <string name="licences">Licences</string>
+    <string name="no_picker">This device has no file picker (%1$s).\n\nCopy the unpacked disc (the folder with default.xbe in it) to\n%2$s\nand open the app again: the files are then checked where they are.</string>
+    <string name="no_tree">This device cannot choose a folder (%1$s).\n\nChoose the disc image instead, or copy the folder with default.xbe in it to\n%2$s\nand open the app again: the files are then checked where they are.</string>
+    <string name="lib_fail">The program\'s library could not be loaded (%1$s).</string>
+    <string name="driver_line">Graphics driver: %1$s   (change…)</string>
+    <string name="installed">The game\'s data is installed and checked (%1$s files).</string>
+    <string name="checking_old">There are game files in the app\'s folder from an earlier copy. They are checked now, where they are (%1$s GB, a minute or two); nothing is copied.</string>
+    <string name="other_build">The data here was installed for another build of the game and has to be installed again.</string>
+    <string name="begun">An install was begun and not finished. Choose the same image or folder again: the files already copied are kept.</string>
+    <string name="needs">The game needs the files of %1$s, %2$s: %3$s files, %4$s GB, and %5$s GB free here (%6$s GB is free now).</string>
+    <string name="checking_folder">Checking the folder and copying the game\'s data. The device may be left alone; the screen stays on.</string>
+    <string name="checking_disc">Checking the disc and copying the game\'s data. The device may be left alone; the screen stays on.</string>
+    <string name="open_fail">The file could not be opened: %1$s</string>
+    <string name="details">Details: %1$s</string>
+    <string name="f_nogame">Choose the folder of Burnout 3: Takedown (the one with default.xbe in it).</string>
+    <string name="f_damaged">The folder is incomplete or not a clean copy of the disc. Extract the disc again, or copy the folder to the device again, and choose it once more: the files already checked are kept.</string>
+    <string name="f_full">Free some space on the device and choose the folder again: the files already copied are kept.</string>
+    <string name="f_unreadable">A file of the folder could not be read. If it is on an SD card or a network place, copy the folder to the device and choose it there.</string>
+    <string name="f_cancelled">Stopped. Choose the same folder again to go on: the files already copied are kept.</string>
+    <string name="i_notimage">Choose the image of the game disc itself: one file, about 7 GB (a full disc image) or 2.5 GB (an .xiso).</string>
+    <string name="i_x360">That is an Xbox 360 disc. The game wanted here is the one for the first Xbox.</string>
+    <string name="i_nogame">Choose the image of Burnout 3: Takedown.</string>
+    <string name="i_wrongver">The default.xbe on this disc is not the exact file this build needs (%1$s): every byte of it is checked.\n\nMost often it is a modified copy. Softmods, hard-disk loaders and trainers patch a few bytes of default.xbe and keep the original beside it, as default.bak or default.xbe.bak. If the folder has one: move the patched default.xbe out of the folder, rename default.bak to default.xbe, and choose the folder again.\n\nIf it is the disc of another region or the demo, it needs the build made for that disc; this one is for %1$s.</string>
+    <string name="i_damaged">The image is incomplete or not a clean copy of the disc. Make it again, or copy it to the device again, and choose it once more: the files already checked are kept.</string>
+    <string name="i_full">Free some space on the device and choose the image again: the files already copied are kept.</string>
+    <string name="i_write">The app\'s own folder could not be written. Check the device\'s storage and try again.</string>
+    <string name="i_unreadable">The file could not be read. If it is on an SD card or a network place, copy it to the device and choose it there.</string>
+    <string name="i_cancelled">Stopped. Choose the same image again to go on: the files already copied are kept.</string>
+    <string name="start_novulkan">This device\'s graphics driver has Vulkan %1$s. The game needs Vulkan 1.3.</string>
+    <string name="start_adreno">Tap the screen for the setup page, where a Turnip driver file (.zip) can be loaded. Press A to start anyway: the game then runs on the processor at a few frames per second.</string>
+    <string name="start_other">There is no other driver for this GPU.\n\nTap or press A to start anyway. The game then runs on the processor at a few frames per second.</string>
 </resources>

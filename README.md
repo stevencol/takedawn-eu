@@ -532,9 +532,9 @@ I test the Android build on a Retroid Pocket 5. The [Devices](#devices) list has
 The game needs Vulkan 1.3. Most Snapdragon devices ship a driver that offers
 less, so the APK bundles Mesa's open-source Turnip driver
 and loads it inside the app. It changes nothing outside the app and needs no
-root. You can choose the driver in three places: the second entry
-in the launcher, "Takedawn: graphics driver"; a button on the setup page; and
-the Graphics page of the settings while the game runs. The choices are:
+root. You can choose the driver in two places: a button on the
+setup page; and the Graphics page of the settings while the game runs. The
+choices are:
 
 - Automatic (the default, and the one to use): the device's own driver when
   it offers Vulkan 1.3; the bundled Turnip on an Adreno device whose driver
@@ -902,8 +902,8 @@ if you are offered the choice.
 
 **Android: the start page says no usable graphics driver, or the game is very slow.**
 
-The game needs Vulkan 1.3. Open the graphics driver page from the launcher and
-choose Automatic: the device's own driver when it has Vulkan 1.3, else the
+The game needs Vulkan 1.3. Open the setup page (tap the screen where the app says
+it) and choose Automatic in its graphics driver button: the device's own driver when it has Vulkan 1.3, else the
 bundled Turnip on Adreno graphics. Without either, the game can only draw on
 the processor, which is far too slow to play.
 

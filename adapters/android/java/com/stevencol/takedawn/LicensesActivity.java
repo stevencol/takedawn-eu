@@ -23,7 +23,7 @@ import java.util.Comparator;
  * the Android-only parts: Mesa Turnip, libadrenotools). A list of the files;
  * one opens in a scrolling view. Back goes from the text to the list.
  *
- * Reached from the setup page and from "Takedawn: graphics driver".
+ * Reached from the setup page.
  */
 public class LicensesActivity extends Activity {
     private static final String DIR = "licenses";

@@ -426,8 +426,7 @@ The Android APK carries the same set as `assets/licenses/` (it has no
 folder beside the program), plus the texts of the parts only it has
 (`tools/android/licenses/`: libadrenotools, linkernsbypass, Mesa's Turnip
 driver, and the Mesa release and patch it was built from). The app shows them
-under **Licences** (the setup page; "Takedawn: graphics driver" in the
-launcher). `build-android.sh` stages the set with `copy_licenses`, the build
+under **Licences** (the setup page). `build-android.sh` stages the set with `copy_licenses`, the build
 machine packs it (`tools/android/build-apk.sh`, `BO3_LICENSES_DIR`), and
 `build-android.sh` and `release.sh` fail when the unsigned or the signed APK
 lacks `assets/licenses` or one of the main texts (`check_apk_licenses` in

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Takedawn</string>
+    <string name="setup_title">Takedawn: datos del juego</string>
+    <string name="pick_image">Elige la imagen de tu disco de Burnout 3: Takedown</string>
+    <string name="pick_folder">Elegir carpeta del juego… (un disco ya extraído a una carpeta)</string>
+    <string name="cancel">Cancelar</string>
+    <string name="stopping">Deteniendo tras el archivo en curso…</string>
+    <string name="start">Iniciar el juego</string>
+    <string name="driver_auto">El controlador gráfico se elige automáticamente.</string>
+    <string name="need_disc">Esta app no incluye nada del juego: sus archivos vienen de tu propio disco. Haz una imagen de él (un .iso del Xbox o de una unidad de PC que lea discos de Xbox) y pon el archivo en este dispositivo o en su tarjeta SD, o elige la carpeta donde extrajiste el disco (la que tiene default.xbe). La imagen o la carpeta solo se lee.</string>
+    <string name="region_btn">Disco: %1$s. Toca si el tuyo es %2$s</string>
+    <string name="licences">Licencias</string>
+    <string name="no_picker">Este dispositivo no tiene selector de archivos (%1$s).\n\nCopia el disco descomprimido (la carpeta con default.xbe) a\n%2$s\ny abre la app otra vez: los archivos se comprueban donde están.</string>
+    <string name="no_tree">Este dispositivo no puede elegir una carpeta (%1$s).\n\nElige la imagen del disco, o copia la carpeta con default.xbe a\n%2$s\ny abre la app otra vez: los archivos se comprueban donde están.</string>
+    <string name="lib_fail">No se pudo cargar la biblioteca del programa (%1$s).</string>
+    <string name="driver_line">Controlador gráfico: %1$s   (cambiar…)</string>
+    <string name="installed">Los datos del juego están instalados y comprobados (%1$s archivos).</string>
+    <string name="checking_old">Hay archivos del juego en la carpeta de la app, de una copia anterior. Se comprueban ahora, donde están (%1$s GB, uno o dos minutos); no se copia nada.</string>
+    <string name="other_build">Los datos de aquí se instalaron para otra versión del juego y hay que instalarlos de nuevo.</string>
+    <string name="begun">Se empezó una instalación y no terminó. Elige la misma imagen o carpeta otra vez: los archivos ya copiados se conservan.</string>
+    <string name="needs">El juego necesita los archivos de %1$s, %2$s: %3$s archivos, %4$s GB, y %5$s GB libres aquí (ahora hay %6$s GB libres).</string>
+    <string name="checking_folder">Comprobando la carpeta y copiando los datos del juego. Puedes dejar el dispositivo; la pantalla se mantiene encendida.</string>
+    <string name="checking_disc">Comprobando el disco y copiando los datos del juego. Puedes dejar el dispositivo; la pantalla se mantiene encendida.</string>
+    <string name="open_fail">No se pudo abrir el archivo: %1$s</string>
+    <string name="details">Detalles: %1$s</string>
+    <string name="f_nogame">Elige la carpeta de Burnout 3: Takedown (la que tiene default.xbe).</string>
+    <string name="f_damaged">La carpeta está incompleta o no es una copia limpia del disco. Extrae el disco otra vez, o copia la carpeta al dispositivo de nuevo, y elígela otra vez: los archivos ya comprobados se conservan.</string>
+    <string name="f_full">Libera espacio en el dispositivo y elige la carpeta otra vez: los archivos ya copiados se conservan.</string>
+    <string name="f_unreadable">No se pudo leer un archivo de la carpeta. Si está en una tarjeta SD o en red, copia la carpeta al dispositivo y elígela allí.</string>
+    <string name="f_cancelled">Detenido. Elige la misma carpeta otra vez para seguir: los archivos ya copiados se conservan.</string>
+    <string name="i_notimage">Elige la imagen del disco del juego: un solo archivo, de unos 7 GB (imagen completa) o 2,5 GB (un .xiso).</string>
+    <string name="i_x360">Ese es un disco de Xbox 360. Aquí se necesita el juego del primer Xbox.</string>
+    <string name="i_nogame">Elige la imagen de Burnout 3: Takedown.</string>
+    <string name="i_wrongver">El default.xbe de este disco no es el archivo exacto que necesita esta versión (%1$s): se comprueba cada byte.\n\nCasi siempre es una copia modificada. Los softmods, los cargadores de disco duro y los trainers cambian unos bytes de default.xbe y guardan el original al lado, como default.bak o default.xbe.bak. Si la carpeta tiene uno: saca el default.xbe modificado de la carpeta, renombra default.bak a default.xbe y elige la carpeta otra vez.\n\nSi es el disco de otra región o la demo, necesita la versión hecha para ese disco; esta es para %1$s.</string>
+    <string name="i_damaged">La imagen está incompleta o no es una copia limpia del disco. Házla otra vez, o cópiala al dispositivo de nuevo, y elígela otra vez: los archivos ya comprobados se conservan.</string>
+    <string name="i_full">Libera espacio en el dispositivo y elige la imagen otra vez: los archivos ya copiados se conservan.</string>
+    <string name="i_write">No se pudo escribir en la carpeta de la app. Revisa el almacenamiento del dispositivo y prueba otra vez.</string>
+    <string name="i_unreadable">No se pudo leer el archivo. Si está en una tarjeta SD o en red, cópialo al dispositivo y elígelo allí.</string>
+    <string name="i_cancelled">Detenido. Elige la misma imagen otra vez para seguir: los archivos ya copiados se conservan.</string>
+    <string name="start_novulkan">El controlador gráfico de este dispositivo tiene Vulkan %1$s. El juego necesita Vulkan 1.3.</string>
+    <string name="start_adreno">Toca la pantalla para ir a la configuración, donde se puede cargar un controlador Turnip (.zip). Pulsa A para iniciar de todos modos: el juego correrá en el procesador a pocos fotogramas por segundo.</string>
+    <string name="start_other">No hay otro controlador para esta GPU.\n\nToca o pulsa A para iniciar de todos modos. El juego correrá en el procesador a pocos fotogramas por segundo.</string>
+</resources>

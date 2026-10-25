@@ -79,8 +79,8 @@ and no APK.
 
 ## The Takedawn package (0.1.0, BO-103)
 
-The app is `com.stevencol.takedawn`, label "Takedawn", with a second
-launcher entry "Takedawn: graphics driver". versionName is `VERSION`'s first
+The app is `com.stevencol.takedawn`, label "Takedawn", with one
+launcher entry (the driver page is opened from the setup page). versionName is `VERSION`'s first
 line; versionCode is major x 10 000 000 + minor x 100 000 + patch x 1 000 +
 build (0.1.0 is 100000), so every release is above the one before. The icon
 is adaptive: `assets/icon`'s two layers as vector drawables and a one-colour
@@ -116,9 +116,8 @@ copied (716 files in 16 s on the RP5). From adb: `am start -n
 com.stevencol.takedawn/.SetupActivity --es image <an image under the
 app's files folder>`.
 
-**The driver, in three places.** The launcher's "Takedawn: graphics driver"
-page; a button on the setup page that opens it and names the present choice;
-and the overlay's Graphics page while the game runs: "Graphics driver in
+**The driver, in two places.** A button on the setup page that opens the driver
+page and names the present choice; and the overlay's Graphics page while the game runs: "Graphics driver in
 use" (what this start loaded), "Driver at the next start" (pressing it steps
 through the Turnip in the app, the device's own driver and a package already
 picked), "Driver packages..." (the driver page over the held game, for the
@@ -314,8 +313,8 @@ defaults to `TU_DEBUG=nobin,noubwc`; with the driver in the app,
 
 `RECOMP_ANDROID_DRIVER=system`, `bundled` or `user` in `env.txt` forces one.
 
-**The player's choice** ("Takedawn: graphics driver", a second entry in
-the launcher; `DriverActivity`, `GpuDriver`). Before the order above comes
+**The player's choice** (the driver page, from the setup page;
+`DriverActivity`, `GpuDriver`). Before the order above comes
 what was chosen there: *Automatic* (the order above), *Mesa Turnip, in the
 app*, *This device's driver*, or a *driver package* picked with the system's
 file picker: the `.zip` with `meta.json` that the emulators' driver pages

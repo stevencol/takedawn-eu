@@ -108,14 +108,14 @@ public class SetupActivity extends Activity {
         sv.addView(box);
         setContentView(sv);
 
-        text("Takedawn: the game's data", 22, Color.WHITE);
+        text(getString(R.string.setup_title), 22, Color.WHITE);
         status = text("", 15, 0xFFD0D0D0);
         bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         bar.setMax(1000);
         bar.setVisibility(View.GONE);
         box.addView(bar);
         detail = text("", 13, 0xFF909090);
-        pick = button("Choose your Burnout 3: Takedown disc image", new View.OnClickListener() {
+        pick = button(getString(R.string.pick_image), new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 i.addCategory(Intent.CATEGORY_OPENABLE);
@@ -123,34 +123,30 @@ public class SetupActivity extends Activity {
                 try {
                     startActivityForResult(i, PICK);
                 } catch (Exception e) {
-                    status.setText("This device has no file picker (" + e.getMessage() + ").\n\n"
-                            + "Copy the unpacked disc (the folder with default.xbe in it) to\n"
-                            + root + "/" + GameActivity.GAME_DIR + "\nand open the app again:"
-                            + " the files are then checked where they are.");
+                    status.setText(getString(R.string.no_picker, e.getMessage(),
+                            root + "/" + GameActivity.GAME_DIR));
                 }
             }
         });
-        pickTree = button("Choose game folder\u2026 (a disc already extracted to a folder)",
+        pickTree = button(getString(R.string.pick_folder),
                 new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
                 try {
                     startActivityForResult(i, PICK_TREE);
                 } catch (Exception e) {
-                    status.setText("This device cannot choose a folder (" + e.getMessage() + ").\n\n"
-                            + "Choose the disc image instead, or copy the folder with default.xbe"
-                            + " in it to\n" + root + "/" + GameActivity.GAME_DIR
-                            + "\nand open the app again: the files are then checked where they are.");
+                    status.setText(getString(R.string.no_tree, e.getMessage(),
+                            root + "/" + GameActivity.GAME_DIR));
                 }
             }
         });
-        cancel = button("Cancel", new View.OnClickListener() {
+        cancel = button(getString(R.string.cancel), new View.OnClickListener() {
             @Override public void onClick(View v) {
                 nativeCancel();
-                detail.setText("Stopping after the file in hand…");
+                detail.setText(getString(R.string.stopping));
             }
         });
-        start = button("Start the game", new View.OnClickListener() {
+        start = button(getString(R.string.start), new View.OnClickListener() {
             @Override public void onClick(View v) {
                 startActivity(new Intent(SetupActivity.this, StartActivity.class));
                 finish();
@@ -161,18 +157,13 @@ public class SetupActivity extends Activity {
                 startActivity(new Intent(SetupActivity.this, DriverActivity.class));
             }
         });
-        text("The graphics driver is chosen automatically.", 13, 0xFF909090);
-        text("Nothing of the game is in this app: its files come from your own disc. Make an"
-                + " image of it (an .iso from the Xbox or a PC drive that reads Xbox discs)"
-                + " and put the file on this device or its SD card, or choose the folder the"
-                + " disc was extracted to (the one with default.xbe in it). The image or"
-                + " folder is only read.",
-                13, 0xFF909090);
+        text(getString(R.string.driver_auto), 13, 0xFF909090);
+        text(getString(R.string.need_disc), 13, 0xFF909090);
         if (Region.both() && Region.ofDisc(GameActivity.filesDir(this)) == null) {
             // No disc here yet: which release's program checks it. The other
             // library needs a process of its own, so the page starts again.
             final String now = Region.lib(this);
-            button("Disc: " + Region.name(now) + ". Tap if yours is " + Region.name(Region.other(this)),
+            button(getString(R.string.region_btn, Region.name(now), Region.name(Region.other(this))),
                     new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     Region.choose(SetupActivity.this, Region.other(SetupActivity.this));
@@ -183,7 +174,7 @@ public class SetupActivity extends Activity {
                 }
             });
         }
-        button("Licences", new View.OnClickListener() {
+        button(getString(R.string.licences), new View.OnClickListener() {
             @Override public void onClick(View v) {
                 startActivity(new Intent(SetupActivity.this, LicensesActivity.class));
             }
@@ -198,7 +189,7 @@ public class SetupActivity extends Activity {
         } catch (Throwable e) {
             Log.e(GameActivity.TAG, "setup: " + e);
             show(false, false, false);
-            status.setText("The program's library could not be loaded (" + e + ").");
+            status.setText(getString(R.string.lib_fail, String.valueOf(e)));
             return;
         }
         handle(st);
@@ -222,8 +213,8 @@ public class SetupActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (driver != null) {
-            driver.setText("Graphics driver: " + GpuDriver.describe(this, GpuDriver.choice(this))
-                    + "   (change\u2026)");
+            driver.setText(getString(R.string.driver_line,
+                    GpuDriver.describe(this, GpuDriver.choice(this))));
         }
     }
 
@@ -231,24 +222,19 @@ public class SetupActivity extends Activity {
         double gb = Long.parseLong(about[3]) / 1e9;
         if (st == 1) {
             show(false, false, true);
-            status.setText("The game's data is installed and checked (" + about[2] + " files).");
+            status.setText(getString(R.string.installed, about[2]));
         } else if (st == 3) {
-            status.setText("There are game files in the app's folder from an earlier copy. They"
-                    + " are checked now, where they are (" + String.format("%.1f", gb)
-                    + " GB, a minute or two); nothing is copied.");
+            status.setText(getString(R.string.checking_old, String.format("%.1f", gb)));
             run(null, new File(root, GameActivity.GAME_DIR).getAbsolutePath());
         } else {
             boolean begun = new File(root, "install.journal").isFile();
             show(true, false, false);
-            status.setText((st == 2 ? "The data here was installed for another build of the"
-                        + " game and has to be installed again.\n\n" : "")
-                    + (begun ? "An install was begun and not finished. Choose the same image"
-                        + " or folder again: the files already copied are kept.\n\n" : "")
-                    + "The game needs the files of " + about[0] + ", " + about[1] + ": "
-                    + about[2] + " files, " + String.format("%.2f", gb) + " GB, and "
-                    + String.format("%.1f", Long.parseLong(about[4]) / 1e9) + " GB free here ("
-                    + String.format("%.1f", new File(root).getUsableSpace() / 1e9)
-                    + " GB is free now).");
+            status.setText((st == 2 ? getString(R.string.other_build) + "\n\n" : "")
+                    + (begun ? getString(R.string.begun) + "\n\n" : "")
+                    + getString(R.string.needs, about[0], about[1], about[2],
+                            String.format("%.2f", gb),
+                            String.format("%.1f", Long.parseLong(about[4]) / 1e9),
+                            String.format("%.1f", new File(root).getUsableSpace() / 1e9)));
             pick.requestFocus();
         }
     }
@@ -296,70 +282,50 @@ public class SetupActivity extends Activity {
     }
 
     /** The same answers for a chosen folder; null where the image's words fit. */
-    private static String adviceFolder(String code) {
+    private String adviceFolder(String code) {
         switch (code) {
         case "no-xbe":
         case "wrong-game":
-            return "Choose the folder of Burnout 3: Takedown (the one with default.xbe in it).";
+            return getString(R.string.f_nogame);
         case "truncated-image":
         case "damaged-source":
-            return "The folder is incomplete or not a clean copy of the disc. Extract the disc"
-                    + " again, or copy the folder to the device again, and choose it once"
-                    + " more: the files already checked are kept.";
+            return getString(R.string.f_damaged);
         case "disk-full":
-            return "Free some space on the device and choose the folder again: the files"
-                    + " already copied are kept.";
+            return getString(R.string.f_full);
         case "source-unreadable":
         case "no-source":
-            return "A file of the folder could not be read. If it is on an SD card or a network"
-                    + " place, copy the folder to the device and choose it there.";
+            return getString(R.string.f_unreadable);
         case "cancelled":
-            return "Stopped. Choose the same folder again to go on: the files already copied"
-                    + " are kept.";
+            return getString(R.string.f_cancelled);
         default:
             return null;
         }
     }
 
-    private static String adviceImage(String code) {
+    private String adviceImage(String code) {
         switch (code) {
         case "not-xbox-image":
-            return "Choose the image of the game disc itself: one file, about 7 GB (a full"
-                    + " disc image) or 2.5 GB (an .xiso).";
+            return getString(R.string.i_notimage);
         case "xbox360-disc":
-            return "That is an Xbox 360 disc. The game wanted here is the one for the first Xbox.";
+            return getString(R.string.i_x360);
         case "no-xbe":
         case "wrong-game":
-            return "Choose the image of Burnout 3: Takedown.";
+            return getString(R.string.i_nogame);
         case "wrong-version":
-            return "The default.xbe on this disc is not the exact file this build needs ("
-                    + WANT + "): every byte of it is checked.\n\n"
-                    + "Most often it is a modified copy. Softmods, hard-disk loaders and"
-                    + " trainers patch a few bytes of default.xbe and keep the original beside"
-                    + " it, as default.bak or default.xbe.bak. If the folder has one: move the"
-                    + " patched default.xbe out of the folder, rename default.bak to"
-                    + " default.xbe, and choose the folder again.\n\n"
-                    + "If it is the disc of another region or the demo, it needs the build"
-                    + " made for that disc; this one is for " + WANT + ".";
+            return getString(R.string.i_wrongver, WANT);
         case "truncated-image":
         case "damaged-source":
-            return "The image is incomplete or not a clean copy of the disc. Make it again,"
-                    + " or copy it to the device again, and choose it once more: the files"
-                    + " already checked are kept.";
+            return getString(R.string.i_damaged);
         case "disk-full":
-            return "Free some space on the device and choose the image again: the files"
-                    + " already copied are kept.";
+            return getString(R.string.i_full);
         case "no-permission":
         case "write-failed":
-            return "The app's own folder could not be written. Check the device's storage and"
-                    + " try again.";
+            return getString(R.string.i_write);
         case "source-unreadable":
         case "no-source":
-            return "The file could not be read. If it is on an SD card or a network place,"
-                    + " copy it to the device and choose it there.";
+            return getString(R.string.i_unreadable);
         case "cancelled":
-            return "Stopped. Choose the same image again to go on: the files already copied"
-                    + " are kept.";
+            return getString(R.string.i_cancelled);
         default:
             return "";
         }
@@ -401,15 +367,14 @@ public class SetupActivity extends Activity {
                         detail.setText("");
                         if ("ok".equals(r[0])) {
                             show(false, false, true);
-                            status.setText("The game's data is installed and checked ("
-                                    + about[2] + " files).");
+                            status.setText(getString(R.string.installed, about[2]));
                         } else {
                             show(true, false, false);
                             String said = r.length > 1 ? r[1] : r[0];
                             // The installer's sentence for a wrong executable reads as if
                             // the region were refused; say first what is usually the cause.
                             status.setText("wrong-version".equals(r[0])
-                                    ? advice(r[0]) + "\n\nDetails: " + said
+                                    ? advice(r[0]) + "\n\n" + getString(R.string.details, said)
                                     : said + "\n\n" + advice(r[0]));
                             pick.requestFocus();
                         }
@@ -427,8 +392,7 @@ public class SetupActivity extends Activity {
                 tree = data.getData();
                 treeBase = null;
                 listings.clear();
-                status.setText("Checking the folder and copying the game's data. The device may"
-                        + " be left alone; the screen stays on.");
+                status.setText(getString(R.string.checking_folder));
                 run(null, null, true);
             }
             return;
@@ -442,11 +406,10 @@ public class SetupActivity extends Activity {
             if (pfd == null) {
                 throw new Exception("no file behind it");
             }
-            status.setText("Checking the disc and copying the game's data. The device may be"
-                    + " left alone; the screen stays on.");
+            status.setText(getString(R.string.checking_disc));
             run(pfd, null);
         } catch (Exception e) {
-            status.setText("The file could not be opened: " + e.getMessage() + "\n\n"
+            status.setText(getString(R.string.open_fail, e.getMessage()) + "\n\n"
                     + advice("source-unreadable"));
         }
     }
@@ -547,7 +510,7 @@ public class SetupActivity extends Activity {
     public void onBackPressed() {
         if (running) {
             nativeCancel();
-            detail.setText("Stopping after the file in hand…");
+            detail.setText(getString(R.string.stopping));
         } else {
             super.onBackPressed();
         }

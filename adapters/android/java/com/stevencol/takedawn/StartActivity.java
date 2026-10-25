@@ -44,15 +44,10 @@ public class StartActivity extends Activity {
         if (!BuildInfo.LEGACY && !GpuDriver.usable(this)) {
             // No silent fall to the CPU rasteriser at a few frames a second.
             canStartAnyway = true;
-            page("This device's graphics driver has Vulkan "
-                    + GpuDriver.versionString(GpuDriver.systemVulkanVersion(this))
-                    + ". The game needs Vulkan 1.3.\n\n"
-                    + (GpuDriver.isAdreno()
-                        ? "Open \"Takedawn: graphics driver\" from the launcher to load a"
-                          + " Turnip driver file (.zip).\n\n"
-                        : "There is no other driver for this GPU.\n\n")
-                    + "Tap or press A to start anyway. The game then runs on the processor"
-                    + " at a few frames per second.");
+            page(getString(R.string.start_novulkan,
+                            GpuDriver.versionString(GpuDriver.systemVulkanVersion(this)))
+                    + "\n\n"
+                    + getString(GpuDriver.isAdreno() ? R.string.start_adreno : R.string.start_other));
             return;
         }
         startGame();
@@ -92,7 +87,14 @@ public class StartActivity extends Activity {
             @Override
             public void onClick(View v) {
                 if (canStartAnyway) {
-                    startGame();
+                    // An Adreno may take a Turnip driver: the setup page has the
+                    // driver choice. Any other GPU has nothing to choose.
+                    if (GpuDriver.isAdreno()) {
+                        startActivity(new Intent(StartActivity.this, SetupActivity.class));
+                        finish();
+                    } else {
+                        startGame();
+                    }
                 }
             }
         });

@@ -18,7 +18,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
- * "Takedawn: graphics driver", a second entry in the launcher: which Vulkan
+ * The driver page, opened from the setup page: which Vulkan
  * driver the game opens (GpuDriver), chosen before the game starts. The Mesa
  * Turnip driver in the app, the device's own, or a driver package picked with
  * the system's file picker (the .zip with meta.json that the Android

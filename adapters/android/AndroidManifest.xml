@@ -82,17 +82,13 @@
             android:excludeFromRecents="true"
             android:exported="false" />
 
-        <!-- A second launcher entry: which Vulkan driver the game opens
-             (docs/android.md, "The GPU driver"). -->
+        <!-- Which Vulkan driver the game opens (docs/android.md, "The GPU
+             driver"). Not a launcher icon of its own: the setup page and
+             the game's start-up warning open it. -->
         <activity android:name="com.stevencol.takedawn.DriverActivity"
-            android:label="@string/driver_name"
+            android:label="@string/app_name"
             android:screenOrientation="sensorLandscape"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="false" />
 
         <!-- The notices and licence texts that ship in the APK
              (assets/licenses/), as plain text. -->
