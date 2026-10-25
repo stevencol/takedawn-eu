@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """pace_report.py <rundir | pace.txt>... [--phases] [--tsv] [--crash]
 
-Reads BO3_PACE_LOG files (src/game/main.c: one line per flip the title
+Reads BO3_PACE_LOG files (core/main.c: one line per flip the title
 emits, with host time and the title's own pacing state) and prints, for the
 60 fps crash camera switch (graphics.crash_60fps, BO-111, docs/crash60.md):
 

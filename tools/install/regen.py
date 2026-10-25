@@ -1,6 +1,6 @@
 """regen.sh in Python, so no bash is needed (Windows) and every platform runs the
 same pipeline: xbe_parser, disasm, func_id, abi_analysis, recomp, from the
-toolkit, writing the generated C into src/game/recomp/gen (never committed).
+toolkit, writing the generated C into core/recomp/gen (never committed).
 
 This follows the repo's regen.sh stage for stage and flag for flag; keep the
 two in step. Output of both was compared file by file (see docs/installer.md).

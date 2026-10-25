@@ -1,4 +1,4 @@
-/* When bo3_fatal may show a message box (src/game/fatal.c). */
+/* When bo3_fatal may show a message box (adapters/platform/fatal.c). */
 #include "fatal.h"
 
 #include <stdio.h>

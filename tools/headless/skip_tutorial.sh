@@ -2,7 +2,7 @@
 # skip_tutorial.sh <rundir> [KEY=VALUE...]
 #
 # The training film of a new profile's first Race / Road Rage / Crash event
-# (A or START leaving it, src/game/tutorial.c). Same start as to_first_race.sh
+# (A or START leaving it, core/tutorial.c). Same start as to_first_race.sh
 # (SAVES=empty: the first-boot screens, a profile that is not saved), then
 #
 #   MODE=race|roadrage|crash   which mode's first event (default race)

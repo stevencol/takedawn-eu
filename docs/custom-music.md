@@ -238,13 +238,13 @@ With no database on the emulated disk (the case until now: the open of
 `TDATA\FFFE0000\MUSIC\ST.DB` fails) the screen still shows NEXT SOUNDTRACK,
 and X stays on EA GAMES TRAX.
 
-The port (`src/game/soundtrack.c`, the toolkit's `src/soundtrack`,
+The port (`core/soundtrack.c`, the toolkit's `src/soundtrack`,
 `docs/runtime/soundtrack.md` there):
 
 0. The overlay's row and folder list are the toolkit's
    (`xbox_OverlaySetMusicFolder`, the browser's model `xsb_*` in
    `src/soundtrack/xst_browse.c`); the port answers "chosen" and the status
-   line (`src/game/soundtrack.c`).
+   line (`core/soundtrack.c`).
 1. At start, with a folder set, the toolkit scans it, writes the database to
    `<save dir>/TDATA/FFFE0000/MUSIC.HOST/ST.DB` and sends the title's `MUSIC`
    paths there. A `MUSIC` folder copied from a real console is not touched.

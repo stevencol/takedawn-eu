@@ -8,7 +8,7 @@
 #                 boundaries there and each function is glued to the next.
 #   func_id       library-function identification (CRT, XDK).
 #   abi_analysis  calling convention / params / return type.
-#   recomp        emits the C into src/game/recomp/gen (gitignored).
+#   recomp        emits the C into core/recomp/gen (gitignored).
 #
 # Nothing here is committed output: build/ and gen/ are regenerable from the
 # user's own default.xbe.
@@ -37,7 +37,7 @@ fi
 # PAL program side by side. Unset, the one tree of before.
 XBE="${BO3_XBE:-$BO3/Burnout 3 Takedown/default.xbe}"
 OUT="${BO3_XR_OUT:-$BO3/build/xr}"
-GEN="${BO3_GEN_DIR:-$BO3/src/game/recomp/gen}"
+GEN="${BO3_GEN_DIR:-$BO3/core/recomp/gen}"
 
 if [[ ! -f "$XBE" ]]; then
     echo "missing $XBE -- extract it from your own disc image"
@@ -51,7 +51,7 @@ fi
 
 # Which release default.xbe is (tools/region/region.py): NTSC-U uses config/
 # as written; another release gets config/ translated to its addresses
-# (config/region/<build>.json) and src/game/recomp/gen/region_map.h.
+# (config/region/<build>.json) and core/recomp/gen/region_map.h.
 echo "==> region"
 BUILD="$(py -3 "$BO3/tools/region/region.py" apply --xbe "$XBE" --out "$OUT/region" --gen "$GEN")" || exit 1
 echo "    $BUILD"

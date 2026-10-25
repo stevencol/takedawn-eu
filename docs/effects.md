@@ -73,7 +73,7 @@ The two effects are mixed over the picture by a number the title already
 holds, so a strength below 100% scales that number in the guest and the
 backends (Metal, Vulkan) do nothing special. While the setting is anything but
 1, the generated code multiplies the value the instruction loaded by the
-setting (`bloom_strength` / `blur_strength`, `src/game/main.c`); at 1 the
+setting (`bloom_strength` / `blur_strength`, `core/main.c`); at 1 the
 patch does not run, so 100% is the title's code path as before. 0 is the
 off path above.
 
@@ -200,7 +200,7 @@ the overlay row on a real window (the settings are covered by the toolkit's
 
 `tools/headless/fx_scene.sh <rundir> race|roadrage|crash` switches one
 effect off for six frames and on again at chosen moments of one run
-(`BO3_FX_AT`, `src/game/main.c`) and dumps the frames around both changes;
+(`BO3_FX_AT`, `core/main.c`) and dumps the frames around both changes;
 `tools/headless/fx_report.py <rundir>` compares them and lists the passes.
 
 - Car at rest on the grid, three changes of each switch: the frame pair a

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # hud_scene.sh <rundir> <scene> [KEY=VALUE...]
 #
-# One scripted drive for the HUD extent monitor (BO3_HUD_MON, src/game/main.c;
+# One scripted drive for the HUD extent monitor (BO3_HUD_MON, core/main.c;
 # docs/widescreen-hud.md). hud_extents.sh runs these in 4:3 and in 16:9 with
 # display.hud_fix and compares what the monitor wrote.
 #

@@ -5,7 +5,7 @@
 #
 # Runs the repository's regen.sh (the whole pipeline, with the guest patches
 # of config/patches.json and the spin-wait list) on this machine, checks that
-# every listed patch site went in, and writes src/game/recomp/gen/regen.stamp:
+# every listed patch site went in, and writes core/recomp/gen/regen.stamp:
 #
 #   key <regen key>          cmake/release_info.cmake's hash of the inputs
 #   tree <sha256>            the generated files (common.sh: gen_tree_hash)

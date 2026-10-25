@@ -148,7 +148,7 @@ these, start here.
 
 ## The cut-off check (extent monitor)
 
-`BO3_HUD_MON=<file>` (`src/game/main.c`, every platform): at every flip, on
+`BO3_HUD_MON=<file>` (`core/main.c`, every platform): at every flip, on
 the guest's thread, the four scenes are walked as the title's render walks
 them and a line is written for every drawn box that an edge of the visible
 picture cuts (callback, frame, object, columns, rows, size, alpha, side).
@@ -189,7 +189,7 @@ letterbox lines, `0x1C1930` its bars, `0x2DF00` the EA Trax pop-up.
 
 ## Looking at a layout
 
-`BO3_HUD_DUMP=<file>` (macOS/Linux, `src/game/main.c`): `touch <file>.req`
+`BO3_HUD_DUMP=<file>` (macOS/Linux, `core/main.c`): `touch <file>.req`
 appends a dump of all four scenes to `<file>`: the frame tree and, per layer,
 every object with its render callback, frame, position, size and the screen
 columns it lands on. The callback address names the code (`config/patches.json`

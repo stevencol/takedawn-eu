@@ -25,7 +25,7 @@ REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 export REPO
 ADB="${ADB:-adb}"
 export ADB
-P=io.github.xenophobentx.takedawn
+P=com.stevencol.takedawn
 F=/sdcard/Android/data/$P/files
 R="$1"; shift
 mkdir -p "$R"

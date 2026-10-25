@@ -1196,7 +1196,7 @@ static int jni_cancelled(void *ctx)
 /* 0: nothing there. 1: a whole install for this program. 2: an install for
  * another build (another manifest). 3: game files without the marker. */
 JNIEXPORT jint JNICALL
-Java_io_github_xenophobentx_takedawn_SetupActivity_nativeState(JNIEnv *env, jclass cls,
+Java_com_stevencol_takedawn_SetupActivity_nativeState(JNIEnv *env, jclass cls,
                                                                jstring jroot)
 {
     const char *root = (*env)->GetStringUTFChars(env, jroot, NULL);
@@ -1216,7 +1216,7 @@ Java_io_github_xenophobentx_takedawn_SetupActivity_nativeState(JNIEnv *env, jcla
 
 /* "<title>\n<build>\n<files>\n<bytes>\n<bytes wanted free>\n<version line>" */
 JNIEXPORT jstring JNICALL
-Java_io_github_xenophobentx_takedawn_SetupActivity_nativeAbout(JNIEnv *env, jclass cls)
+Java_com_stevencol_takedawn_SetupActivity_nativeAbout(JNIEnv *env, jclass cls)
 {
     char t[600];
 
@@ -1228,7 +1228,7 @@ Java_io_github_xenophobentx_takedawn_SetupActivity_nativeAbout(JNIEnv *env, jcla
 }
 
 JNIEXPORT void JNICALL
-Java_io_github_xenophobentx_takedawn_SetupActivity_nativeCancel(JNIEnv *env, jclass cls)
+Java_com_stevencol_takedawn_SetupActivity_nativeCancel(JNIEnv *env, jclass cls)
 {
     (void)env; (void)cls;
     s_jni_cancel = 1;
@@ -1308,7 +1308,7 @@ static jstring jni_install(JNIEnv *env, jobject self, jint fd, jstring jfolder, 
 }
 
 JNIEXPORT jstring JNICALL
-Java_io_github_xenophobentx_takedawn_SetupActivity_nativeInstall(JNIEnv *env, jobject self,
+Java_com_stevencol_takedawn_SetupActivity_nativeInstall(JNIEnv *env, jobject self,
                                                                  jint fd, jstring jfolder,
                                                                  jstring jroot)
 {
@@ -1317,7 +1317,7 @@ Java_io_github_xenophobentx_takedawn_SetupActivity_nativeInstall(JNIEnv *env, jo
 
 /* The folder the player picked with ACTION_OPEN_DOCUMENT_TREE. */
 JNIEXPORT jstring JNICALL
-Java_io_github_xenophobentx_takedawn_SetupActivity_nativeInstallTree(JNIEnv *env, jobject self,
+Java_com_stevencol_takedawn_SetupActivity_nativeInstallTree(JNIEnv *env, jobject self,
                                                                      jstring jroot)
 {
     return jni_install(env, self, -1, NULL, jroot, 1);

@@ -12,7 +12,7 @@
 #
 # With nothing to load, the profile screens open no file to wait on: each
 # press is given 150 flips (a menu takes no input while it slides in). The
-# shader pre-build's race scene (src/game/shaderbuild.c) goes the same way
+# shader pre-build's race scene (core/shaderbuild.c) goes the same way
 # in-process; this one is the check from outside, with the real film.
 set -u
 source "$(dirname "$0")/scene_lib.sh"

@@ -63,8 +63,8 @@ target_compile_definitions(takedawn_setup_ui PUBLIC TAKEDAWN_SETUP_VERSION="${TA
 # its name. "Europe (PAL) retail" and "PAL" for the texts; NTSC-U without one.
 set(_root "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 set(_build "ntsc-u-retail")
-if(EXISTS "${_root}/src/game/recomp/gen/region_map.h")
-    file(STRINGS "${_root}/src/game/recomp/gen/region_map.h" _b REGEX "^#define BO3_BUILD_ID \"[a-z0-9-]+\"$")
+if(EXISTS "${_root}/core/recomp/gen/region_map.h")
+    file(STRINGS "${_root}/core/recomp/gen/region_map.h" _b REGEX "^#define BO3_BUILD_ID \"[a-z0-9-]+\"$")
     if(_b MATCHES "\"([a-z0-9-]+)\"")
         set(_build "${CMAKE_MATCH_1}")
     endif()

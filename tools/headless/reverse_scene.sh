@@ -3,7 +3,7 @@
 #
 # BO-96: the car reverses on the left trigger. Single Event > Race as
 # to_race.sh, then, with the title's own speed logged every frame
-# (BO3_DRIVE_LOG, src/game/main.c):
+# (BO3_DRIVE_LOG, core/main.c):
 #
 #   rt             accelerate
 #   lt             held from speed: brakes to a stop and, still held, reverses

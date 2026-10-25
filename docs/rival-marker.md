@@ -68,7 +68,7 @@ Four, `config/patches.json`, all at `display.rival_marker = farther`:
 - `0x18F230`, `0x18F252` (`cmp_u32`): the counter reads 1, so the distance
   is checked every step (and in every picture with High refresh).
 
-`rival_near` and `rival_far` are host variables (`src/game/main.c`,
+`rival_near` and `rival_far` are host variables (`core/main.c`,
 `RIVAL_NEAR`, `RIVAL_FAR`); `BO3_RIVAL_SWITCH=<near>,<far>` sets others for
 a test. At `original` the four calls return what the title loaded, so the
 title runs as shipped.
@@ -99,7 +99,7 @@ one and its arrow in the other, steadily.
 
 Mac, Metal, headless, out-of-box settings, Single Event race at Silver Lake
 with the autopilot, about 70 s of racing a run, the probe
-(`BO3_HIREFRESH_MARKS`, src/game/hirefresh.c) logging each picture's slots
+(`BO3_HIREFRESH_MARKS`, core/hirefresh.c) logging each picture's slots
 and every racer's point; a rival's look from its distance rank. Changes of a
 rival's look with its slot kept (the depth there), and changes back within
 30 pictures:

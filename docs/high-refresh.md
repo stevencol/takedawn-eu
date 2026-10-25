@@ -16,8 +16,8 @@ It adds at most one 60 Hz step of delay, the one an interpolation cannot
 avoid: a picture is a blend of the last two steps at the frame's own flip
 time, never further behind (see [The latency](#the-latency)).
 
-The game code is in `src/game/hirefresh.c`: nine wraps in
-`src/game/recomp/recomp_manual.c`, no guest patch. The toolkit side
+The game code is in `core/hirefresh.c`: nine wraps in
+`core/recomp/recomp_manual.c`, no guest patch. The toolkit side
 (xboxrecomp) is the display's rate and refresh grid (`xbox_DisplayRate`,
 `xbox_DisplayGrid`: the refreshes the presenter reports, else the window
 system's stated refresh, else the SDL display mode), the host flip grid

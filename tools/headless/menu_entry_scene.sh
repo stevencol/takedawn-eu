@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # menu_entry_scene.sh <rundir> [KEY=VALUE...]
 #
-# interface.menu_entry (BO-133, src/game/menuentry.c): Driver Details >
+# interface.menu_entry (BO-133, core/menuentry.c): Driver Details >
 # Settings lists TAKEDAWN SETTINGS as its fifth line, and A on it opens the
 # overlay while the title stays on its page.
 #

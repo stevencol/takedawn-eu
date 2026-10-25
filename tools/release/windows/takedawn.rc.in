@@ -1,4 +1,4 @@
-// Made from tools/release/windows/takedawn.rc.in by src/game/CMakeLists.txt
+// Made from tools/release/windows/takedawn.rc.in by core/CMakeLists.txt
 // (BO3_RELEASE): the executable's icon, its manifest and what Explorer's
 // Details tab shows.
 #include <winver.h>

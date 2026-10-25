@@ -6,7 +6,7 @@
 #   ADB="adb -s <serial>" LAUNCH="$PWD/tools/android/scene-launch.sh" \
 #   GAME_DIR=/tmp/bo3-scene SAVES=none \
 #     tools/headless/to_first_race.sh /tmp/bo3-scene/r1 \
-#       RECOMP_TRACE=pacing=all,frametime=/sdcard/Android/data/io.github.xenophobentx.takedawn/files/ft.csv
+#       RECOMP_TRACE=pacing=all,frametime=/sdcard/Android/data/com.stevencol.takedawn/files/ft.csv
 #
 # What it does: writes the run's RECOMP_* variables to the app's scene-env.txt (the
 # host's paths left out), starts the app, follows the app's takedawn.log into
@@ -38,7 +38,7 @@
 # removed before the start so that line is this start's own.
 set -u
 ADB="${ADB:-adb}"
-P=io.github.xenophobentx.takedawn
+P=com.stevencol.takedawn
 F=/sdcard/Android/data/$P/files
 D="$(dirname "$RECOMP_STDIO_LOG")"
 

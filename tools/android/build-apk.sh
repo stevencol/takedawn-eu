@@ -33,7 +33,7 @@
 #                      and the app runs the one of the disc it finds
 #                      (Region.java). Unset: the one libmain.so of before.
 #   BO3_ANDROID_PKG_SUFFIX  e.g. .legacy: a second app beside the usual one
-#                      (package io.github.xenophobentx.takedawn.legacy, its
+#                      (package com.stevencol.takedawn.legacy, its
 #                      own data), out/takedawn-android-arm64-legacy.apk; with
 #                      ANDROID_API=24 and its own BO3_ANDROID_DEPS and
 #                      BUILD_DIR, the Android 7 build
@@ -53,7 +53,7 @@
 # every release is above the one before and a rebuild of one can be told
 # apart; a pre-release (x.y.z-beta) is 900 below x.y.z (see below).
 #
-# The program's code (src/game/recomp/gen, from regen.sh) is compiled into
+# The program's code (core/recomp/gen, from regen.sh) is compiled into
 # libmain.so. The game data is not in the APK: the first start installs it
 # from the player's own disc image (SetupActivity).
 set -euo pipefail
@@ -75,7 +75,7 @@ fi
 [ -d "$TK" ] || { echo "toolkit checkout not found; set XBOXRECOMP_DIR" >&2; exit 1; }
 [ -f "$NDK/build/cmake/android.toolchain.cmake" ] || { echo "NDK not found (ANDROID_NDK_HOME)" >&2; exit 1; }
 [ -f "$D/SDL2/lib/libSDL2.so" ] && [ -f "$D/glslang/lib/libglslang.a" ] || "$HERE/tools/android/fetch-deps.sh"
-ls "$HERE"/src/game/recomp/gen/recomp_*.c >/dev/null 2>&1 || { echo "no generated C: run regen.sh first" >&2; exit 1; }
+ls "$HERE"/core/recomp/gen/recomp_*.c >/dev/null 2>&1 || { echo "no generated C: run regen.sh first" >&2; exit 1; }
 B="${BUILD_DIR:-$HERE/build-android}"
 JOBS="${JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu)}"
 HOST_TAG="$(ls "$NDK/toolchains/llvm/prebuilt" | head -1)"
@@ -104,7 +104,7 @@ ADRENO=()
 gen_suffix() {
   if grep -q 'BO3_BUILD_PAL_RETAIL' "$1/region_map.h" 2>/dev/null; then echo _pal; else echo _ntsc; fi
 }
-GEN1="$HERE/src/game/recomp/gen"
+GEN1="$HERE/core/recomp/gen"
 GEN2="${BO3_ANDROID_GEN2:-}"
 SUF1=""; SUF2=""
 if [ -n "$GEN2" ]; then
@@ -138,7 +138,7 @@ rm -rf "$OUT"
 mkdir -p "$OUT/gen" "$OUT/classes" "$OUT/dex" "$OUT/pack/lib/$ABI" "$HERE/out"
 
 echo "== resources and manifest ($(basename "$BT"), $(basename "$PLATFORM"))"
-"$BT/aapt2" compile --dir "$HERE/android/res" -o "$OUT/res.zip"
+"$BT/aapt2" compile --dir "$HERE/adapters/android/res" -o "$OUT/res.zip"
 VNAME="$(head -1 "$HERE/VERSION" | tr -d '[:space:]')"
 [[ "$VNAME" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.]+)?$ ]] || { echo "VERSION: $VNAME is not major.minor.patch[-pre-release]" >&2; exit 1; }
 VBUILD="${TAKEDAWN_ANDROID_BUILD:-0}"
@@ -155,7 +155,7 @@ fi
 # The id the native library was built with (cmake/release_info.cmake picks the
 # release's manifest): the installer writes it to its marker, and
 # StartActivity compares the two, so they must be the same.
-REL_H="$B/src/game/release/bo3_release.h"
+REL_H="$B/core/release/bo3_release.h"
 MANIFEST_ID="$(sed -n 's/^#define BO3_MANIFEST_ID "\([0-9a-f]*\)".*/\1/p' "$REL_H" 2>/dev/null | head -1)"
 [ -n "$MANIFEST_ID" ] || { echo "no BO3_MANIFEST_ID in $REL_H" >&2; exit 1; }
 echo "   Takedawn $VNAME, versionCode $VCODE, disc manifest $MANIFEST_ID"
@@ -163,15 +163,15 @@ echo "   Takedawn $VNAME, versionCode $VCODE, disc manifest $MANIFEST_ID"
 # native builds: libmain alone, or main_pal and main_ntsc (Region.java).
 LIBS_JAVA='"main"'; MANIFESTS_JAVA="\"$MANIFEST_ID\""
 if [ -n "$GEN2" ]; then
-  MANIFEST_ID2="$(sed -n 's/^#define BO3_MANIFEST_ID "\([0-9a-f]*\)".*/\1/p' "$B2/src/game/release/bo3_release.h" | head -1)"
+  MANIFEST_ID2="$(sed -n 's/^#define BO3_MANIFEST_ID "\([0-9a-f]*\)".*/\1/p' "$B2/core/release/bo3_release.h" | head -1)"
   [ -n "$MANIFEST_ID2" ] || { echo "no BO3_MANIFEST_ID in the second build" >&2; exit 1; }
   LIBS_JAVA="\"main$SUF1\", \"main$SUF2\""
   MANIFESTS_JAVA="\"$MANIFEST_ID\", \"$MANIFEST_ID2\""
   echo "   and the second release: main$SUF2, disc manifest $MANIFEST_ID2"
 fi
-mkdir -p "$OUT/gen/io/github/xenophobentx/takedawn"
-cat > "$OUT/gen/io/github/xenophobentx/takedawn/BuildInfo.java" <<JAVA
-package io.github.xenophobentx.takedawn;
+mkdir -p "$OUT/gen/com/stevencol/takedawn"
+cat > "$OUT/gen/com/stevencol/takedawn/BuildInfo.java" <<JAVA
+package com.stevencol.takedawn;
 
 /** Made by tools/android/build-apk.sh. */
 final class BuildInfo {
@@ -220,14 +220,14 @@ if [ "${BO3_REQUIRE_LICENSES:-0}" = 1 ]; then
 fi
 echo "   $(ls "$AL" | wc -l | tr -d ' ') licence files in assets/licenses"
 
-"$BT/aapt2" link -o "$OUT/base.apk" -I "$JAR" --manifest "$HERE/android/AndroidManifest.xml" \
+"$BT/aapt2" link -o "$OUT/base.apk" -I "$JAR" --manifest "$HERE/adapters/android/AndroidManifest.xml" \
   --java "$OUT/gen" ${DEBUGGABLE:+--debug-mode} --version-code "$VCODE" --version-name "$VNAME" \
   --min-sdk-version "$API" --target-sdk-version "$TARGET_API" -A "$OUT/assets" \
-  ${BO3_ANDROID_PKG_SUFFIX:+--rename-manifest-package "io.github.xenophobentx.takedawn$BO3_ANDROID_PKG_SUFFIX"} \
+  ${BO3_ANDROID_PKG_SUFFIX:+--rename-manifest-package "com.stevencol.takedawn$BO3_ANDROID_PKG_SUFFIX"} \
   "$OUT/res.zip"
 
 echo "== java (SDL's activity, the start and game activities)"
-find "$D/SDL2/java" "$HERE/android/java" "$OUT/gen" -name '*.java' \
+find "$D/SDL2/java" "$HERE/adapters/android/java" "$OUT/gen" -name '*.java' \
   | while read -r f; do wp "$f"; done > "$OUT/sources.txt"
 javac -nowarn -Xlint:none -source 17 -target 17 -encoding UTF-8 \
   -classpath "$JAR" -d "$(wp "$OUT/classes")" @"$(wp "$OUT/sources.txt")"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The Android adaptive icon from assets/icon: three vector drawables.
 
-    tools/android/make-icon.py        # writes android/res/drawable/ic_launcher_*.xml
+    tools/android/make-icon.py        # writes adapters/android/res/drawable/ic_launcher_*.xml
 
 assets/icon/takedawn-android-fg.svg and -bg.svg are the two layers (original
 artwork, see assets/icon/README.md). Android takes vector drawables, not SVG,
@@ -16,7 +16,7 @@ import os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = os.path.join(ROOT, "assets", "icon")
-OUT = os.path.join(ROOT, "android", "res", "drawable")
+OUT = os.path.join(ROOT, "adapters", "android", "res", "drawable")
 HEAD = '<?xml version="1.0" encoding="utf-8"?>\n<!-- Made by tools/android/make-icon.py from assets/icon/%s; do not edit. -->\n'
 VEC = ('<vector xmlns:android="http://schemas.android.com/apk/res/android"\n'
        '    xmlns:aapt="http://schemas.android.com/aapt"\n'
@@ -121,7 +121,7 @@ def main():
                        ("ic_launcher_background.xml", background())):
         with open(os.path.join(OUT, name), "w") as f:
             f.write(text)
-        print("wrote android/res/drawable/" + name)
+        print("wrote adapters/android/res/drawable/" + name)
 
 
 if __name__ == "__main__":

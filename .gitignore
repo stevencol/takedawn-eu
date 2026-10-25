@@ -7,8 +7,8 @@ Burnout 3 Takedown/
 
 # Generated from default.xbe by regen.sh. Never committed: the tool ships,
 # the output doesn't.
-src/game/recomp/gen/
-src/game/recomp/gen.*/
+core/recomp/gen/
+core/recomp/gen.*/
 
 # Build output (regen.sh's analysis lands in build/xr)
 build/

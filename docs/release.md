@@ -30,7 +30,7 @@ first start is under [Unsigned](#unsigned-what-the-player-sees).
 
 The recompiled C is made once, on the Mac, by `tools/release/gen.sh`: the
 repository's `regen.sh` with the guest patches (`config/patches.json`) and the
-spin-wait list. It then writes `src/game/recomp/gen/regen.stamp`:
+spin-wait list. It then writes `core/recomp/gen/regen.stamp`:
 
 ```
 key e1005046d21e29c8        the regen key (cmake/release_info.cmake)
@@ -89,7 +89,7 @@ test bed, is compiled out), deployment target macOS 13.0.
 
 ```
 Takedawn.app/Contents/
-  Info.plist                 io.github.xenophobentx.takedawn
+  Info.plist                 com.stevencol.takedawn
   MacOS/Takedawn             the game (CFBundleExecutable)
   MacOS/takedawn-setup       the setup window; the game opens it when its data is missing
   Frameworks/libSDL2-2.0.0.dylib   sdl2-compat 2.32.74

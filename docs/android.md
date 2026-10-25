@@ -26,7 +26,7 @@ was copied to). Needs: the Android SDK with build-tools and one platform, the
 NDK (r28 or newer: 16 KB ELF alignment by default), a JDK 17+, cmake 3.20+,
 ninja, python3, curl, zip.
 
-    ./regen.sh                       # as on every platform: src/game/recomp/gen from your default.xbe
+    ./regen.sh                       # as on every platform: core/recomp/gen from your default.xbe
     tools/android/fetch-deps.sh      # once: SDL2, glslang, libadrenotools, Mesa Turnip (below)
     tools/android/build-apk.sh       # out/burnout3-android-arm64.apk
 
@@ -49,7 +49,7 @@ platform android-37.0, Temurin JDK 21, cmake 3.31.6: the APK is 13.3 MB
 Install and start:
 
     adb install -r out/burnout3-android-arm64.apk
-    adb shell am start -n io.github.xenophobentx.takedawn/.StartActivity
+    adb shell am start -n com.stevencol.takedawn/.StartActivity
     adb logcat -s takedawn
 
 The APK is signed with a debug key made on first use (`BO3_KEYSTORE`). Android
@@ -79,7 +79,7 @@ and no APK.
 
 ## The Takedawn package (0.1.0, BO-103)
 
-The app is `io.github.xenophobentx.takedawn`, label "Takedawn", with a second
+The app is `com.stevencol.takedawn`, label "Takedawn", with a second
 launcher entry "Takedawn: graphics driver". versionName is `VERSION`'s first
 line; versionCode is major x 10 000 000 + minor x 100 000 + patch x 1 000 +
 build (0.1.0 is 100000), so every release is above the one before. The icon
@@ -87,7 +87,7 @@ is adaptive: `assets/icon`'s two layers as vector drawables and a one-colour
 layer for themed icons (`tools/android/make-icon.py` writes them; the
 results are committed). Its folders, all the app's own:
 
-    /sdcard/Android/data/io.github.xenophobentx.takedawn/files/
+    /sdcard/Android/data/com.stevencol.takedawn/files/
         Burnout 3 Takedown/    the game's data, installed at the first start
         .complete              the installer's marker (manifest id, version, 716 files)
         install.journal        only while an install is under way
@@ -113,7 +113,7 @@ not start until the marker is there and names this program's manifest
 (`StartActivity.dataComplete`). A game folder copied into the app's folder by
 hand, the way before this page, is checked where it lies and nothing is
 copied (716 files in 16 s on the RP5). From adb: `am start -n
-io.github.xenophobentx.takedawn/.SetupActivity --es image <an image under the
+com.stevencol.takedawn/.SetupActivity --es image <an image under the
 app's files folder>`.
 
 **The driver, in three places.** The launcher's "Takedawn: graphics driver"
@@ -144,12 +144,23 @@ frame by draw count, 1.0 % of frames over 18.5 ms; off, 13.0 passes, GPU 2.7
 to 4.0 ms, 0.5 %. Both hold 60 (no or one second under 57), so both stay on
 by default; off is worth 0.5 to 0.75 ms of GPU time a frame.
 
+**The package is `com.stevencol.takedawn`** (this fork's own id; the project it
+comes from uses `io.github.xenophobentx.takedawn`). A build of the earlier id
+is another app to Android: it stays installed beside this one, with its own
+data and no way to update into it, and the game's data (2.5 GB) is not moved
+for you. To keep it, with adb, from
+`Android/data/io.github.xenophobentx.takedawn/` to
+`Android/data/com.stevencol.takedawn/` (a move inside the same storage is
+instant): the folder `files/Burnout 3 Takedown`, and `files/takedawn` for the
+saves and settings. The first start then checks the data in place. Then
+the old app can be uninstalled.
+
 **An install of the earlier package** (`io.github.xenophobentx.burnout3`,
 "Burnout 3 (recomp)") is another app to Android: the two stay installed side
 by side and neither sees the other's files, so nothing is moved
 automatically. To carry over, with a PC (adb or USB file transfer), from
 `Android/data/io.github.xenophobentx.burnout3/files/` to
-`Android/data/io.github.xenophobentx.takedawn/files/`:
+`Android/data/com.stevencol.takedawn/files/`:
 
 - saves and settings: the contents of `burnout3/` (`UDATA`, `TDATA`,
   `settings.toml`) into `takedawn/`;
@@ -178,7 +189,7 @@ build and a release do not update each other.
 device.) Everything the app reads and writes is in its own external files directory,
 which needs no permission and which adb and a USB file transfer both reach:
 
-    /sdcard/Android/data/io.github.xenophobentx.takedawn/files/
+    /sdcard/Android/data/com.stevencol.takedawn/files/
         Burnout 3 Takedown/    the unpacked disc (default.xbe, Data, Tracks, ...): about 2.4 GB
         takedawn/              saves (UDATA, TDATA, the emulated HDD), settings.toml, crash/
         enhance.toml           optional, as beside the executable elsewhere
@@ -190,7 +201,7 @@ The shader cache goes to the app's internal cache directory
 
 Getting the data there:
 
-    adb push "Burnout 3 Takedown" /sdcard/Android/data/io.github.xenophobentx.takedawn/files/
+    adb push "Burnout 3 Takedown" /sdcard/Android/data/com.stevencol.takedawn/files/
 
 (over Wi-Fi adb 2.4 GB took 1 min 50 s), or copy the folder over USB file
 transfer. For a first test 0.77 GB is enough (boot, menu, a race on Silver
@@ -316,7 +327,7 @@ storage (`driver-custom/`), where an update of the app leaves it; "Remove the
 driver package" deletes it. The page shows what the last start ran on (the
 device name, its Vulkan version, Mesa's version for a Turnip), and the
 overlay's Graphics page shows the same for the running game. From adb:
-`am start -n io.github.xenophobentx.takedawn/.DriverActivity --es import
+`am start -n com.stevencol.takedawn/.DriverActivity --es import
 <a file under the app's files folder>` or `--es choose auto|bundled|system|custom|remove`,
 in a debuggable build only (the page is exported, so any app could send
 these; a release build ignores them and says so in the log).
@@ -662,7 +673,7 @@ what the file said.
   `SDLActivity`: it puts the app's directories into the environment
   (`RECOMP_ANDROID_DIR`, `XDG_DATA_HOME`, `XDG_CACHE_HOME`, `env.txt`'s lines)
   and SDL loads `libSDL2.so` and `libmain.so` and calls `SDL_main`, which is
-  `main()` of `src/game/main.c`.
+  `main()` of `core/main.c`.
 - **Host.** `recomp_android_host_init()` (toolkit) sends stdout and stderr to
   logcat (tag `takedawn`) and to `takedawn.log`, and makes the files directory
   the working directory. From there on it is the Linux host.
@@ -798,7 +809,7 @@ by several projects: take its lock first
 7. Save, quit, start again: the profile is there. Home button and back into
    the app. A second pad over Bluetooth (split screen).
 8. A 20-minute race: temperature, battery drain, the cores
-   (`adb shell top -H -p $(adb shell pidof io.github.xenophobentx.takedawn)`).
+   (`adb shell top -H -p $(adb shell pidof com.stevencol.takedawn)`).
 9. A crash report: `takedawn/crash/` after a fault.
 
 ## Sources

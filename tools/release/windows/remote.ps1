@@ -57,7 +57,7 @@ function Run-Captured([string]$file, [string[]]$arguments, [string]$to, [string]
 }
 
 # The folders of the port's earlier name are moved by a game start that has
-# its data and by a real --install, by nothing else (src/game/install.h;
+# its data and by a real --install, by nothing else (core/install.h;
 # tools/release/test-user-dirs.sh is the same test for the other systems and
 # for Git Bash here).
 function Test-UserDirs([string]$program) {

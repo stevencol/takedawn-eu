@@ -15,7 +15,7 @@ used by the shared SDL code, so MSVC is not supported for it.
     tools/win/build-mingw.sh    # bin/burnout3.exe + bin/SDL2.dll
 
 The toolkit checkout is `../xboxrecomp-win` or `../xboxrecomp` (or set
-`XBOXRECOMP_DIR`); the generated C is in `src/game/recomp/gen` as usual.
+`XBOXRECOMP_DIR`); the generated C is in `core/recomp/gen` as usual.
 Dependencies go to `~/.cache/bo3-windeps` (`BO3_WINDEPS`). The same llvm-mingw
 (Windows x86-64 zip) can build natively on Windows with the same CMake
 options (`-DCMAKE_TOOLCHAIN_FILE=cmake/llvm-mingw-x86_64.cmake`).

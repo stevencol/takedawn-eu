@@ -3,7 +3,7 @@
 #
 # The two effect switches (graphics.bloom, graphics.motion_blur; BO-101,
 # docs/effects.md) checked in one headless run. At chosen moments one switch
-# goes off for six frames and on again (BO3_FX_AT, src/game/main.c) and the
+# goes off for six frames and on again (BO3_FX_AT, core/main.c) and the
 # frames around both changes are dumped: the same scene with the effect,
 # without it, and with it again. RECOMP_TRACE=metal_frame is on: the log has
 # the render passes of every flip.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """hud_extents.py: read what the HUD extent monitor wrote (BO3_HUD_MON,
-src/game/main.c; docs/widescreen-hud.md).
+core/main.c; docs/widescreen-hud.md).
 
   table <hudmon.txt>                 every kind of box an edge of the visible
                                      picture cut, with how long and how much

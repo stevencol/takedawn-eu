@@ -4,7 +4,7 @@
 #
 #   REPO        this checkout
 #   TOOLKIT     the toolkit checkout: XBOXRECOMP_DIR, else ../xboxrecomp
-#   GEN         src/game/recomp/gen, the generated C (never committed)
+#   GEN         core/recomp/gen, the generated C (never committed)
 #   DIST        dist/<version>/ in this checkout (git-ignored): the artefacts
 #   WORK        build/release/ in this checkout (git-ignored): build trees
 #   DEPS        ~/.cache/takedawn-deps (TAKEDAWN_DEPS): pinned libraries
@@ -41,7 +41,7 @@ TOOLKIT="${XBOXRECOMP_DIR:-$REPO/../xboxrecomp}"
 TOOLKIT="$(cd "$TOOLKIT" && pwd)"
 export XBOXRECOMP_DIR="$TOOLKIT"
 
-GEN="$REPO/src/game/recomp/gen"
+GEN="$REPO/core/recomp/gen"
 WORK="${TAKEDAWN_WORK:-$REPO/build/release}"
 DEPS="${TAKEDAWN_DEPS:-$HOME/.cache/takedawn-deps}"
 JOBS="${JOBS:-4}"

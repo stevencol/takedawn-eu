@@ -3,7 +3,7 @@
 #
 # The folders of the port's earlier name (Burnout3, burnout3, xboxrecomp) are
 # moved to the new one only by a game start that has its data and by a real
-# --install; every query leaves them where they are (src/game/install.h).
+# --install; every query leaves them where they are (core/install.h).
 # This runs <program> (takedawn, Takedawn.exe under Git Bash, the AppImage,
 # a checkout's bin/burnout3) with a scratch profile under <scratch dir> that
 # holds folders of the old name, and checks, command by command, that

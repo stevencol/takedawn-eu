@@ -28,7 +28,7 @@ of which set draws what, for each pad and layout, is in the toolkit's `src/input
 Each folder has `buttons.svg` (128x64), `a_button.svg` and `b_button.svg` (32x32). An SVG has the size of the game
 texture it goes into and holds a picture at each place where the game keeps a
 prompt. The positions are numbers (`LAYOUT` in `draw.py`, the rectangles in
-`src/game/glyphs.c`). At run time the pictures are copied over the game's
+`core/glyphs.c`). At run time the pictures are copied over the game's
 texture as it is uploaded to the GPU; where a set changes nothing (the A B X Y
 discs of the Xbox set) the game's own texels simply stay.
 

@@ -63,7 +63,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
 <dict>
   <key>CFBundleName</key><string>Takedawn</string>
   <key>CFBundleDisplayName</key><string>Takedawn</string>
-  <key>CFBundleIdentifier</key><string>io.github.xenophobentx.takedawn</string>
+  <key>CFBundleIdentifier</key><string>com.stevencol.takedawn</string>
   <key>CFBundleExecutable</key><string>Takedawn</string>
   <key>CFBundleIconFile</key><string>Takedawn</string>
   <key>CFBundlePackageType</key><string>APPL</string>

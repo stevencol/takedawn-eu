@@ -34,7 +34,7 @@ this game alone. The toolkit holds the recompiler and the Xbox runtime.
 |---|---|
 | wrong generated code, an x86, x87 or SSE instruction the recompiler handles badly, a jump table the disassembler misreads | the toolkit: `tools/recomp`, `tools/disasm` |
 | the picture is drawn wrong, a kernel call misbehaves, controllers, sound, films, frame pacing, the settings menu | the toolkit: `src/` |
-| an address only this game has (a seed function, a patch site, a boot default), the scenes of the shader pre-build | here: `src/game/`, `config/` |
+| an address only this game has (a seed function, a patch site, a boot default), the scenes of the shader pre-build | here: `core/`, `config/` |
 | the installer, its window, packaging | here: `tools/install/` |
 
 A change in this repository that needs a toolkit change names it in the commit
@@ -62,7 +62,7 @@ Before you open a pull request:
 ## Rules for what lands
 
 - Never commit generated or extracted material: nothing from
-  `src/game/recomp/gen/`, `build/` or `Burnout 3 Takedown/`, no disassembly
+  `core/recomp/gen/`, `build/` or `Burnout 3 Takedown/`, no disassembly
   listings, memory dumps, captured command buffers, shader key lists or shader
   caches. All of these contain the game.
 - Screenshots and recordings belong in the issue or the pull request. The

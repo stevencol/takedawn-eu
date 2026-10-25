@@ -758,7 +758,7 @@ bool InstallerWindow::LocateProgram() {
   for (int i = 0; i < 6 && up.cdUp(); ++i) {
     for (const QString& name : names) {
       const QFileInfo info(up.filePath("bin/" + name));
-      if (info.isFile() && info.isExecutable() && up.exists("src/game/install.c")) {
+      if (info.isFile() && info.isExecutable() && up.exists("core/install.c")) {
         program_ = info.absoluteFilePath();
         return true;
       }

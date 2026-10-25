@@ -85,10 +85,10 @@ cp "$RT" "$STAGE/runtime-x86_64"
 
 # ── the sources, on the build machine ────────────────────────────────
 say "copying the sources and the generated code to ${HOST:+the build machine, }$LDIR"
-remote "mkdir -p $LDIR/src/game $LDIR/src/toolkit $LDIR/out $LDIR/stage" || die "cannot reach the Linux machine"
-git -C "$REPO" ls-files -z | rsync -a --from0 --files-from=- "$REPO/" "$RDEST/src/game/"
+remote "mkdir -p $LDIR/core $LDIR/src/toolkit $LDIR/out $LDIR/stage" || die "cannot reach the Linux machine"
+git -C "$REPO" ls-files -z | rsync -a --from0 --files-from=- "$REPO/" "$RDEST/core/"
 git -C "$TOOLKIT" ls-files -z | rsync -a --from0 --files-from=- "$TOOLKIT/" "$RDEST/src/toolkit/"
-rsync -a --delete "$GEN/" "$RDEST/src/game/src/game/recomp/gen/"
+rsync -a --delete "$GEN/" "$RDEST/core/core/recomp/gen/"
 rsync -a --delete "$STAGE/" "$RDEST/stage/"
 # SDL: the pinned sources, built once in the container (linux/build-sdl.sh).
 fetch_pin() {  # <url> <sha256> -> path in the cache
@@ -132,9 +132,9 @@ if [ -n "$QTSRC" ]; then
         '$SNIPER_SDK_IMAGE' sh /build-qt.sh && touch qt-sniper/$QT_VERSION-$QKEY/done
 fi"
 fi
-remote "printf '%s\n' '$(build_commit_line "$REPO")' > $LDIR/src/game/BUILD_COMMIT;
+remote "printf '%s\n' '$(build_commit_line "$REPO")' > $LDIR/core/BUILD_COMMIT;
         printf '%s\n' '$(build_commit_line "$TOOLKIT")' > $LDIR/src/toolkit/BUILD_COMMIT"
-there="$(remote "cd $LDIR/src/game/src/game/recomp/gen && sha256sum recomp_* | LC_ALL=C sort -k2 | sha256sum | cut -d' ' -f1; sed -n 's/^key //p' regen.stamp")"
+there="$(remote "cd $LDIR/core/core/recomp/gen && sha256sum recomp_* | LC_ALL=C sort -k2 | sha256sum | cut -d' ' -f1; sed -n 's/^key //p' regen.stamp")"
 [ "$(printf '%s' "$there" | sed -n 1p)" = "$GEN_TREE" ] || die "the generated files on the build machine are not the stamped tree"
 [ "$(printf '%s' "$there" | sed -n 2p)" = "$GEN_KEY" ] || die "the regen key on the build machine is not $GEN_KEY"
 say "generated code on the build machine: tree and key match ($GEN_KEY)"
@@ -146,7 +146,7 @@ $sdl_build
 $qt_build
 podman run --rm --security-opt label=disable -e JOBS=${LINUX_JOBS:-8} -e NICE=$NICE \
     -v \"\$PWD/src\":/src:ro -v \"\$PWD/stage\":/stage:ro -v \"\$PWD/out\":/out -v \"\$PWD/sdl-sniper/$SKEY/prefix\":/sdl:ro $qt_mount \
-    '$SNIPER_SDK_IMAGE' sh /src/game/tools/release/linux/in-container.sh
+    '$SNIPER_SDK_IMAGE' sh /core/tools/release/linux/in-container.sh
 command -v mksquashfs >/dev/null || { echo 'mksquashfs (squashfs-tools) is needed on the build machine' >&2; exit 1; }
 rm -f out/fs.squashfs out/$NAME
 mksquashfs out/AppDir out/fs.squashfs -root-owned -noappend -comp zstd -Xcompression-level 19 -b 1M -quiet -no-progress

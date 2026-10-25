@@ -1,4 +1,4 @@
-package io.github.xenophobentx.takedawn;
+package com.stevencol.takedawn;
 
 import android.app.Activity;
 import android.content.Intent;

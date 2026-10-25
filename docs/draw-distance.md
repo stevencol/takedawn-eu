@@ -62,7 +62,7 @@ What it does not do: scenery, track, props, traffic appearing, shadows
 
 Overlay Graphics page, "Scenery detail"; `settings.toml` `[graphics]
 scenery_detail = "original" | "far"`; `RECOMP_GFX_SCENERY_DETAIL`. Default
-`far` in release builds and on the Steam Deck (`src/game/main.c`, the
+`far` in release builds and on the Steam Deck (`core/main.c`, the
 `env_default` block for a window); `original` in a build from source that
 is not a release build, and headless.
 

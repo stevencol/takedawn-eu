@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Other releases of the title: their addresses for the ones the project uses.
 
-Everything in config/ and src/game names the title by its addresses in the
+Everything in config/ and core names the title by its addresses in the
 North American default.xbe. config/region/<build>.json holds, for another
 release, the address of each of those in that release's default.xbe; it is
 made once by a maintainer who has both executables, and from then on a build
@@ -16,7 +16,7 @@ needs only the user's own default.xbe.
 
   region.py apply --xbe default.xbe --out build/xr/region
       For regen.sh: say which release default.xbe is, write
-      src/game/recomp/gen/region_map.h, and for a release other than NTSC-U
+      core/recomp/gen/region_map.h, and for a release other than NTSC-U
       the translated config/*.json and the recomp_manual.c the recompiler
       scans, into --out. Prints the build id; the files regen.sh should use
       are listed in --out/files.txt.
@@ -37,9 +37,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 US_SHA256 = "9f497acd82adb8edfb72cc31aeeb35010b45d32b13a3f1fc6540717ff24d13f9"
 GA_RE = re.compile(r"\bGA\((0x[0-9A-Fa-f]+)[uU]?\)")
 SUB_RE = re.compile(r"\bsub_([0-9A-Fa-f]{8})(_gen)?\b")
-SOURCES = ["src/game/*.c", "src/game/*.h", "src/game/recomp/*.c"]
-MANUAL = "src/game/recomp/recomp_manual.c"
-HEADER = "src/game/recomp/gen/region_map.h"
+SOURCES = ["core/*.c", "core/*.h", "core/recomp/*.c"]
+MANUAL = "core/recomp/recomp_manual.c"
+HEADER = "core/recomp/gen/region_map.h"
 
 
 def code_only(src):
@@ -149,7 +149,7 @@ def export(args):
 
     doc = {
         "about": "Addresses in this release's default.xbe of the ones config/ and "
-                 "src/game use, which name the North American default.xbe. Made by "
+                 "core use, which name the North American default.xbe. Made by "
                  "tools/region/region.py export from the two executables "
                  "(tools/region/addrmap.py); 'overrides' are placed by hand and "
                  "kept on export. 'review' lists those placed from a neighbour "
@@ -279,7 +279,7 @@ def main():
     a.add_argument("--xbe", required=True)
     a.add_argument("--out", required=True)
     a.add_argument("--gen", help="the generated-code folder the header goes in "
-                                 "(default src/game/recomp/gen)")
+                                 "(default core/recomp/gen)")
     args = ap.parse_args()
     {"export": export, "apply": apply}[args.cmd](args)
 

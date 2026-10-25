@@ -1,5 +1,5 @@
 /*
- * The PS2 driving layout (src/game/controls.h, BO-106): every row of the
+ * The PS2 driving layout (core/controls.h, BO-106): every row of the
  * table, the Nintendo face layout under it, and the hand-over when driving
  * ends (a held button must not become a press in the menu that opens).
  */

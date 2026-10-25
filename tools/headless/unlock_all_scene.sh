@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # unlock_all_scene.sh <rundir> [KEY=VALUE...]
 #
-# The overlay's Unlock everything (BO-131, src/game/unlockall.c, the
+# The overlay's Unlock everything (BO-131, core/unlockall.c, the
 # toolkit's xbox_OverlaySetCheats) with a window (the overlay needs one):
 #
 #   1. Main menu; the overlay (driven through RECOMP_OVERLAY_TEST), Advanced

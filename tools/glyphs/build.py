@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Renders assets/glyphs/<family>/*.svg at 1:1 and writes them as C arrays for
-src/game/glyphs.c (and, with --png, as PNG files to look at).
+core/glyphs.c (and, with --png, as PNG files to look at).
 
     build.py <assets/glyphs> <out.c> <out.h> [--png <dir>]
     build.py --check        prints the renderer found; status 1 if there is none

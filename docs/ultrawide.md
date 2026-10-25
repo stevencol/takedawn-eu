@@ -18,7 +18,7 @@ the title's own values, through `config/patches.json`.
 - **Which frames are wide.** Marks (a patch kind that only tells the host the
   title got somewhere) at the stage set-ups, the stage renders and the five
   writers of `NV097_FLIP_STALL`: a frame is wide if a stage drew the world in
-  it. `src/game/main.c` keeps the answer per flip number; the presenter
+  it. `core/main.c` keeps the answer per flip number; the presenter
   (`nv2a_present_frame_aspect_fn`) shows a wide frame at the wide aspect and
   every other frame (menus, loading screens, videos, the garage) at 16:9 in the
   middle of the window. The mode switches per frame: the loading screen's last
@@ -50,7 +50,7 @@ the title's own values, through `config/patches.json`.
   front-end scene keeps a picture that fills the screen on its layer 0 and
   never uses that layer over the 3D world, so a stage frame whose layer 0 has
   an object is a front-end frame: shown at 16:9, the scene unsqueezed, like
-  the loading screens after it (`uw_fe_owns_picture` in `src/game/main.c`,
+  the loading screens after it (`uw_fe_owns_picture` in `core/main.c`,
   a read of the scene the title built). Without this the world showed in the
   side strips for two frames.
 - A flip without a stage frame straight after a wide one repeats that frame

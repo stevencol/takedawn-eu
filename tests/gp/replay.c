@@ -1,6 +1,6 @@
 /*
  * replay.c -- a RECOMP_ORACLE_CAP capture (the toolkit's apu_oracle_cap.c)
- * through the GP model as the title wires it (src/game/gp_image.c).
+ * through the GP model as the title wires it (core/gp_image.c).
  *
  *   bo3_gp_replay <cap.bin> <out6.f32> [export.f32] [nolfe] [lfe=<hz>] [engine] [norev]
  *

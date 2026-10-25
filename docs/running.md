@@ -40,7 +40,7 @@ The save folder is per user:
 | macOS | `~/Library/Application Support/Takedawn` |
 | Linux, Steam Deck | `$XDG_DATA_HOME/takedawn`, else `~/.local/share/takedawn` |
 | Windows | `%APPDATA%\Takedawn` |
-| Android | `takedawn/` in the app's folder, `Android/data/io.github.xenophobentx.takedawn/files` |
+| Android | `takedawn/` in the app's folder, `Android/data/com.stevencol.takedawn/files` |
 
 A folder of the port's earlier name (`Burnout3`, `burnout3`) is moved to the
 new name once, at the first start ([installer.md](installer.md)).
@@ -128,7 +128,7 @@ Where it goes: `reports/takedawn-report-<date>-<time>.zip` in the
 | macOS | `~/Library/Application Support/Takedawn/reports` |
 | Linux, Steam Deck | `~/.local/share/takedawn/reports` |
 | Windows | `%APPDATA%\Takedawn\reports` |
-| Android | `Android/data/io.github.xenophobentx.takedawn/files/takedawn/reports` on the device's storage (USB file transfer or `adb pull`), and `Download/` after "Save a copy to Downloads" |
+| Android | `Android/data/com.stevencol.takedawn/files/takedawn/reports` on the device's storage (USB file transfer or `adb pull`), and `Download/` after "Save a copy to Downloads" |
 
 What is in it (plain text, compressed: 70 to 130 KB in the runs measured,
 about 450 KB more with the screenshot):
@@ -232,7 +232,7 @@ Menu timing needs care:
   plays before a mode's first event; once that event has been played it does
   not come again (seen on the owner's profiles). Here A
   or START (a new press, not a button held from the menu) leaves it at any
-  time (the film page's "skippable" byte, `src/game/tutorial.c`).
+  time (the film page's "skippable" byte, `core/tutorial.c`).
   `tools/headless/skip_tutorial.sh` measures it: a new profile's first
   Race, Road Rage or Crash, the flips from the film's open to the track's
   load (about 7500 played out, 760 with A pressed 600 flips in).
@@ -323,8 +323,8 @@ For debugging:
 | `BO3_CTL_LOG=<file>` | The driving-controls gate ([controls.md](controls.md)), a line per change: `S` a word of the title's state (module, paused player, event phase, countdown, results), `D` driving or not, `G` a pad's layout, `P` a pad as read and as given to the title. `tools/headless/controls_scene.sh` asserts on it. |
 | `BO3_CTL_SCRIPTED=1` | `input.control_scheme` also applies to a pad a script drives (a test's stand-in for a controller). Without it scripted input always has the Xbox layout. |
 | `BO3_HUD_OUTPUT=<w>x<h>` | A headless run lays the widescreen HUD out as for a window of that size (e.g. `1280x800` with `RECOMP_PRESENT_FIT=fill16x10`), so frame dumps show the layout a window would get. |
-| `RECOMP_DEBUG=guest_cpus=token` | macOS (apexJCL runtime): the title's threads take turns on one guest CPU by a token, since the Mac cannot pin them to one core. Off by default. The `[KERNEL] guest CPU: N preemptions, M requests, longest wait W ms` line every 2 s shows it working; `guest CPU kept N ms in host code` names a host function that sat on it. Needs the lifted code in `__TEXT,__guest`, which the macOS build does (`src/game/CMakeLists.txt`). |
-| `RECOMP_DEBUG=autopilot=1` | Test driver (BO-130): the title's own AI drives player 1's car while a race is in play, through the player car's "AI controlled" byte the title uses on the rolling start and after the finish (`src/game/autopilot.c`). Off by default, not in the overlay. Logs `[AUTOPILOT] result place P/N time T s ...` at the finish. `tools/headless/race_drive.sh <rundir>` drives a whole race with it (Mac, and Android through `tools/android/scene-launch.sh`). The AI is slow: it finished Silver Lake (3 laps) 6th of 6. Races only: no Crash mode. |
+| `RECOMP_DEBUG=guest_cpus=token` | macOS (apexJCL runtime): the title's threads take turns on one guest CPU by a token, since the Mac cannot pin them to one core. Off by default. The `[KERNEL] guest CPU: N preemptions, M requests, longest wait W ms` line every 2 s shows it working; `guest CPU kept N ms in host code` names a host function that sat on it. Needs the lifted code in `__TEXT,__guest`, which the macOS build does (`core/CMakeLists.txt`). |
+| `RECOMP_DEBUG=autopilot=1` | Test driver (BO-130): the title's own AI drives player 1's car while a race is in play, through the player car's "AI controlled" byte the title uses on the rolling start and after the finish (`core/autopilot.c`). Off by default, not in the overlay. Logs `[AUTOPILOT] result place P/N time T s ...` at the finish. `tools/headless/race_drive.sh <rundir>` drives a whole race with it (Mac, and Android through `tools/android/scene-launch.sh`). The AI is slow: it finished Silver Lake (3 laps) 6th of 6. Races only: no Crash mode. |
 
 ## A scripted session, start to finish
 

@@ -150,7 +150,7 @@ just read.
 The title reads its pads in one place: sub_001B57E0, once a frame, which
 holds the title's only `XInputGetState` call. The host runs right after that
 call, on the title's own thread (the `ctl_pad` mark in `config/patches.json`;
-`src/game/controls.c`), before the title turns the bytes into the channels
+`core/controls.c`), before the title turns the bytes into the channels
 that every menu and every car reads. Whether the title is driving is read
 from its memory at that same moment, so the layout follows the title's state
 on the same frame.

@@ -56,7 +56,7 @@ the program carries a list of what a game needs, made by a sweep of the title
 on the developer's machines, and builds all of it before the first race.
 
 `graphics/pipelines-vulkan.manifest` and `graphics/pipelines-metal.manifest`
-are compiled into the program (`src/game/pcmanifest.c`), so they are the same
+are compiled into the program (`core/pcmanifest.c`), so they are the same
 on every platform, an APK included. They are key lists in the format of the
 files above, under the backend's key-format version plus `; manifest <revision>`.
 They hold no title code and no art:
@@ -459,7 +459,7 @@ are then compiled once, the first time a race shows them.
 
 ## How it is made
 
-- The scenes are tables in `src/game/shaderbuild.c`, played by the toolkit's
+- The scenes are tables in `core/shaderbuild.c`, played by the toolkit's
   in-process driver (`xbox_autoplay.h`): waits on the files the title opens
   and on flips, presses through the `RECOMP_PAD_LIVE` file, as
   `tools/headless` does from outside. A file is named by the part of its

@@ -1,4 +1,4 @@
-package io.github.xenophobentx.takedawn;
+package com.stevencol.takedawn;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -25,7 +25,7 @@ import java.util.List;
  * then starts the app again with the driver that was chosen, and goes.
  */
 public class RestartActivity extends Activity {
-    static final String EXTRA_PID = "io.github.xenophobentx.takedawn.OLD_PID";
+    static final String EXTRA_PID = "com.stevencol.takedawn.OLD_PID";
     private static final String TAG = GameActivity.TAG;
     /** How long the old process is given before it is ended from here. */
     private static final long WAIT_MS = 4000;

@@ -9,7 +9,7 @@ cross, a circle, a square and a triangle drawn as plain strokes.
 
 One SVG per family and per texture of the game that holds prompts. An SVG has
 the texture's own size as its viewBox and a picture in each place the game
-keeps one (the places are a table of numbers in LAYOUT; src/game/glyphs.c
+keeps one (the places are a table of numbers in LAYOUT; core/glyphs.c
 lists the same rectangles for the runtime). tools/glyphs/build.py renders
 them at 1:1 at build time.
 

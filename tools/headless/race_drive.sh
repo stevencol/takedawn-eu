@@ -2,7 +2,7 @@
 # race_drive.sh <rundir> [KEY=VALUE...]
 #
 # A race the title's own AI drives for player 1 (RECOMP_DEBUG=autopilot=1,
-# src/game/autopilot.c, BO-130): Single Event > Race, region USA, track
+# core/autopilot.c, BO-130): Single Event > Race, region USA, track
 # Silver Lake Southbound (as to_race.sh), the first car. From the GO the
 # AI has the car; the run waits for the finish and the results and writes
 # <rundir>/result.txt with the placing and the race time the autopilot logs.

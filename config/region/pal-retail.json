@@ -1,5 +1,5 @@
 {
- "about": "Addresses in this release's default.xbe of the ones config/ and src/game use, which name the North American default.xbe. Made by tools/region/region.py export from the two executables (tools/region/addrmap.py); 'overrides' are placed by hand and kept on export. 'review' lists those placed from a neighbour rather than seen in the code.",
+ "about": "Addresses in this release's default.xbe of the ones config/ and core use, which name the North American default.xbe. Made by tools/region/region.py export from the two executables (tools/region/addrmap.py); 'overrides' are placed by hand and kept on export. 'review' lists those placed from a neighbour rather than seen in the code.",
  "build": "pal-retail",
  "name": "Burnout 3: Takedown, Europe (PAL) retail",
  "xbe": {
@@ -18,14 +18,14 @@
   "0x00356E50": "0x003571F0"
  },
  "review": {
-  "0x00011010": "src/game/main.c: 0x3 after 0x0001100d, delta +0x0, next anchor delta +0x0",
-  "0x004AE1EC": "src/game/main.c: 0xc after 0x004ae1e0, delta +0x3c0, next anchor delta +0x3c0",
-  "0x004D536C": "src/game/controls.c: 0x4 after 0x004d5368, delta +0x3c0, next anchor delta +0x3c0",
-  "0x004D5394": "src/game/main.c: 0x4 after 0x004d5390, delta +0x3c0, next anchor delta +0x3c0",
+  "0x00011010": "core/main.c: 0x3 after 0x0001100d, delta +0x0, next anchor delta +0x0",
+  "0x004AE1EC": "core/main.c: 0xc after 0x004ae1e0, delta +0x3c0, next anchor delta +0x3c0",
+  "0x004D536C": "core/controls.c: 0x4 after 0x004d5368, delta +0x3c0, next anchor delta +0x3c0",
+  "0x004D5394": "core/main.c: 0x4 after 0x004d5390, delta +0x3c0, next anchor delta +0x3c0",
   "0x0054F914": "patches.json if: 0x14 after 0x0054f900, delta +0x3c0, next anchor delta +0x3c0",
   "0x0054F984": "patches.json if: 0x30 after 0x0054f954, delta +0x3c0, next anchor delta +0x3c0",
-  "0x005A3758": "src/game/main.c: 0xd after 0x005a374b, delta +0x3b0, next anchor delta +0x3b0",
-  "0x0060EA0C": "src/game/main.c: 0xc after 0x0060ea00, delta +0x3b0, next anchor delta +0x3b0"
+  "0x005A3758": "core/main.c: 0xd after 0x005a374b, delta +0x3b0, next anchor delta +0x3b0",
+  "0x0060EA0C": "core/main.c: 0xc after 0x0060ea00, delta +0x3b0, next anchor delta +0x3b0"
  },
  "addresses": {
   "0x00011000": "0x00011000",

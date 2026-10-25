@@ -2,7 +2,7 @@
 
 The port is written against the North American (NTSC-U) `default.xbe`:
 `config/patches.json`, `config/seed_functions.json`, `config/spin_waits.json`
-and the hand-written code in `src/game` name the game's functions and globals
+and the hand-written code in `core` name the game's functions and globals
 by their addresses in that executable. The European (PAL) retail executable is
 the same program compiled again: the same size, the same title id, about 900
 bytes more code spread through `.text`, and so every function and global a
@@ -22,7 +22,7 @@ configuration.
   data words match. `addrmap.py lookup map.json 0x4D5370 ...` asks it.
 - `tools/region/region.py export` collects every US address the project uses
   (the three config files, each `GA(...)` and each `sub_XXXXXXXX` in
-  `src/game`), looks each up in the map and writes
+  `core`), looks each up in the map and writes
   `config/region/<build>.json`. It refuses an address it does not know for
   certain: an instruction must be a matched instruction, data must be
   referenced by the code or an aligned data word. What it cannot place goes
@@ -31,15 +31,15 @@ configuration.
 - `regen.sh` runs `tools/region/region.py apply` first. It knows the release
   by the SHA-256 of `default.xbe`; for NTSC-U it changes nothing, for another
   release it writes the translated config files into `build/xr/region/` and
-  feeds them to the recompiler, and writes `src/game/recomp/gen/region_map.h`,
-  which `src/game/guest_addr.h` includes.
+  feeds them to the recompiler, and writes `core/recomp/gen/region_map.h`,
+  which `core/guest_addr.h` includes.
 
 Only a maintainer with both executables runs `addrmap.py` and `export`. A
 build for PAL needs only the PAL disc: the committed table is enough.
 
 ## In the code
 
-A guest address in `src/game` is written `GA(0x4D5370)`: the literal alone,
+A guest address in `core` is written `GA(0x4D5370)`: the literal alone,
 without an offset (`GA(0x73A1D0u) + 0x10u`). For NTSC-U `GA(x)` is `x`; for
 another release `region_map.h` defines one `GA_<literal>` per spelling. A
 generated function called or wrapped by name (`sub_001D2879`, and
@@ -67,8 +67,8 @@ machine that plays either disc carries two:
 
 - `BO3_GEN_DIR` (CMake, and the same variable for `regen.sh`, with `BO3_XBE`
   and `BO3_XR_OUT`) names the folder of the generated C. The usual
-  `src/game/recomp/gen` is the one of before; a second release goes in
-  `src/game/recomp/gen.ntsc-u` (git-ignored) from its own default.xbe.
+  `core/recomp/gen` is the one of before; a second release goes in
+  `core/recomp/gen.ntsc-u` (git-ignored) from its own default.xbe.
 - `-DBO3_EXE_SUFFIX=-pal-retail` / `-ntsc-u-retail` names the programs
   `burnout3-pal-retail` and `burnout3-ntsc-u-retail`, side by side in `bin/`.
   Started on the other release's disc, either one reads the region in the

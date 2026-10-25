@@ -922,7 +922,7 @@ is used.
 
 | | Mac | Windows | Linux and Steam Deck | Android |
 |---|---|---|---|---|
-| Saves, `settings.toml`, logs, bug reports, crash reports | `~/Library/Application Support/Takedawn` | `%APPDATA%\Takedawn` | `~/.local/share/takedawn` | `takedawn/` in the app's folder, `Android/data/io.github.xenophobentx.takedawn/files`, which a PC reaches over USB |
+| Saves, `settings.toml`, logs, bug reports, crash reports | `~/Library/Application Support/Takedawn` | `%APPDATA%\Takedawn` | `~/.local/share/takedawn` | `takedawn/` in the app's folder, `Android/data/com.stevencol.takedawn/files`, which a PC reaches over USB |
 | Game data | `Game/` in that folder, or the folder you chose | `%LOCALAPPDATA%\Takedawn\Game`, or the folder you chose | `Game/` in that folder, or the folder you chose | `Burnout 3 Takedown/` in the app's folder |
 | Shader cache (safe to delete) | `~/Library/Caches/Takedawn` | `%LOCALAPPDATA%\Takedawn\cache` | `~/.cache/takedawn` | The app's cache, which Android may empty |
 

@@ -9,7 +9,7 @@
 # <- sub_001C9C80 <- sub_001543B0). Here the load is made to fail on
 # purpose: a copy of the game folder made of links, its ten Ident*.awd
 # empty files, then tools/headless/custom_music_scene.sh in it (the custom
-# soundtrack chosen, a race). Without the guard (src/game/soundbank.c) the
+# soundtrack chosen, a race). Without the guard (core/soundbank.c) the
 # scene fails ("flip ... not reached"); with it the race goes on, the log
 # says "[SOUND] a sound bank did not load", and this exits 0.
 #

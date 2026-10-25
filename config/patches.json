@@ -1,5 +1,5 @@
 {
-  "about": "Opt-in guest patches (tools.recomp --patches, regen.sh). After each listed load (or store) the generated code calls RECOMP_PATCH_U32 / RECOMP_PATCH_F32, which keeps the title's value unless the setting reads 'when' (src/game/main.c enables game.speed_units: RECOMP_SPEED_UNITS=kmh, BO-79; and display.hud_fix: RECOMP_GFX_HUD_FIX=1, BO-89; both on the overlay's Display page and in settings.toml). The display.hud_fix values are expressions of 'aspect' (16/9 or 4/3, the picture the title was set up for): W = 480*aspect is the 640x480 layout's width at the picture's true shape, (640 - W)/2 its left edge, s = (4/3)/aspect the squeeze that undoes the anamorphic stretch (the front-end scene's: (4/3)/base_aspect, the title's own picture, with the full-frame decoration drawn where the title puts it: fe_dx / fe_dw, BO-222); 'vis_x0' / 'vis_x1' are the frame columns the window shows of the picture as presented (the presenter's overscan crop and 16:10 fill), 'ref_x0' / 'ref_x1' those a 4:3 picture shows in the same window: the HUD's margins are kept from the visible edges at what they are in 4:3. The arithmetic (layout width 480*aspect, offset (640 - width)/2, HUD origin 320*(1 - s)) is that of the PS2 widescreen fix: ThirteenAG/WidescreenFixesPack, source/Burnout3.PCSX2F.WidescreenFix (MIT licence); the Xbox sites were found in this build, with Nahelam's PS2 symbol list (PS2-Game-Mods, Burnout 3 Takedown/Research/SLES_525.85.txt) as the guide to the names. display.ultrawide (RECOMP_DISPLAY_ULTRAWIDE=21:9|32:9|window, BO-94): the camera's aspect and field-of-view factor and the marks that tell the host a stage is set up, drew a frame, and a frame ended; 'aspect' is then the stage's wide aspect, 'frame_aspect' the shown frame's, 'fe_squeeze' the factor that keeps the front-end scene's 16:9 shape over a wide frame. graphics.bloom and graphics.motion_blur (RECOMP_GFX_BLOOM, RECOMP_GFX_MOTION_BLUR, BO-101, strengths 0 to 1 in tenths since BO-212; overlay Graphics page): the title's own bloom and blur, full strength (1) as shipped; at \"0\" the title's own conditions for drawing them read false, between 0 and 1 the bloom's weight in the frame pass and the blur's opacity are times 'bloom_strength' / 'blur_strength' (docs/effects.md). graphics.vehicle_detail (RECOMP_GFX_VEHICLE_DETAIL=far|farthest, BO-112; overlay Graphics page): the distances at which the title swaps a vehicle's model for a simpler one, times 'vehicle_lod_scale' (2 or 4); as shipped at 'original' (docs/draw-distance.md). graphics.scenery_detail (RECOMP_GFX_SCENERY_DETAIL=far, BO-177; overlay Graphics page): the distance at which a track prop with two models (the pine trees above all) swaps its detailed model for its simple one, times 'scenery_lod_scale'; as shipped at 'original' (docs/draw-distance.md). graphics.crash_60fps (RECOMP_GFX_CRASH_60FPS=1, BO-111; overlay Graphics page): the title's 30 Hz phases, the crash and takedown cameras, at 60: where a one-player stage's update chooses the rate, its 'a crash camera is on' byte reads 0 and the title takes its own full-rate path (docs/crash60.md); off as shipped. graphics.split_60fps (RECOMP_GFX_SPLIT_60FPS=1, BO-116; overlay Graphics page): two-player split screen, which the title runs at its half rate from the stage's set-up to its end, at 60: the request the set-up stores is stored as 0 (docs/split-screen.md); off as shipped. audio.split_music (RECOMP_AUDIO_SPLIT_MUSIC=1, BO-116; overlay Audio page): the title's music manager keeps EA GAMES TRAX silent while more than one player plays; where it compares the player count for that, the count reads 1 (docs/split-screen.md); off as shipped, and off the audio path is the title's own. display.rival_marker (RECOMP_GFX_RIVAL_MARKER=farther, BO-241; overlay Display page): where the marker over a rival changes from its arrow to its race position, 35 checked every 30 steps as shipped; at farther the position below rival_near (60), the arrow past rival_far (75), checked every step (docs/rival-marker.md). game.race_clock (RECOMP_GAME_RACE_CLOCK=1, BO-159; overlay Graphics page): a one-player stage starts its simulation stepper in the mode that runs one step a frame whatever the time, and switches to its wall-clock mode only at the end of the first crash camera; the start stores the wall-clock mode instead, so a host below 60 keeps real time from the start (docs/race-clock.md); off as shipped.",
+  "about": "Opt-in guest patches (tools.recomp --patches, regen.sh). After each listed load (or store) the generated code calls RECOMP_PATCH_U32 / RECOMP_PATCH_F32, which keeps the title's value unless the setting reads 'when' (core/main.c enables game.speed_units: RECOMP_SPEED_UNITS=kmh, BO-79; and display.hud_fix: RECOMP_GFX_HUD_FIX=1, BO-89; both on the overlay's Display page and in settings.toml). The display.hud_fix values are expressions of 'aspect' (16/9 or 4/3, the picture the title was set up for): W = 480*aspect is the 640x480 layout's width at the picture's true shape, (640 - W)/2 its left edge, s = (4/3)/aspect the squeeze that undoes the anamorphic stretch (the front-end scene's: (4/3)/base_aspect, the title's own picture, with the full-frame decoration drawn where the title puts it: fe_dx / fe_dw, BO-222); 'vis_x0' / 'vis_x1' are the frame columns the window shows of the picture as presented (the presenter's overscan crop and 16:10 fill), 'ref_x0' / 'ref_x1' those a 4:3 picture shows in the same window: the HUD's margins are kept from the visible edges at what they are in 4:3. The arithmetic (layout width 480*aspect, offset (640 - width)/2, HUD origin 320*(1 - s)) is that of the PS2 widescreen fix: ThirteenAG/WidescreenFixesPack, source/Burnout3.PCSX2F.WidescreenFix (MIT licence); the Xbox sites were found in this build, with Nahelam's PS2 symbol list (PS2-Game-Mods, Burnout 3 Takedown/Research/SLES_525.85.txt) as the guide to the names. display.ultrawide (RECOMP_DISPLAY_ULTRAWIDE=21:9|32:9|window, BO-94): the camera's aspect and field-of-view factor and the marks that tell the host a stage is set up, drew a frame, and a frame ended; 'aspect' is then the stage's wide aspect, 'frame_aspect' the shown frame's, 'fe_squeeze' the factor that keeps the front-end scene's 16:9 shape over a wide frame. graphics.bloom and graphics.motion_blur (RECOMP_GFX_BLOOM, RECOMP_GFX_MOTION_BLUR, BO-101, strengths 0 to 1 in tenths since BO-212; overlay Graphics page): the title's own bloom and blur, full strength (1) as shipped; at \"0\" the title's own conditions for drawing them read false, between 0 and 1 the bloom's weight in the frame pass and the blur's opacity are times 'bloom_strength' / 'blur_strength' (docs/effects.md). graphics.vehicle_detail (RECOMP_GFX_VEHICLE_DETAIL=far|farthest, BO-112; overlay Graphics page): the distances at which the title swaps a vehicle's model for a simpler one, times 'vehicle_lod_scale' (2 or 4); as shipped at 'original' (docs/draw-distance.md). graphics.scenery_detail (RECOMP_GFX_SCENERY_DETAIL=far, BO-177; overlay Graphics page): the distance at which a track prop with two models (the pine trees above all) swaps its detailed model for its simple one, times 'scenery_lod_scale'; as shipped at 'original' (docs/draw-distance.md). graphics.crash_60fps (RECOMP_GFX_CRASH_60FPS=1, BO-111; overlay Graphics page): the title's 30 Hz phases, the crash and takedown cameras, at 60: where a one-player stage's update chooses the rate, its 'a crash camera is on' byte reads 0 and the title takes its own full-rate path (docs/crash60.md); off as shipped. graphics.split_60fps (RECOMP_GFX_SPLIT_60FPS=1, BO-116; overlay Graphics page): two-player split screen, which the title runs at its half rate from the stage's set-up to its end, at 60: the request the set-up stores is stored as 0 (docs/split-screen.md); off as shipped. audio.split_music (RECOMP_AUDIO_SPLIT_MUSIC=1, BO-116; overlay Audio page): the title's music manager keeps EA GAMES TRAX silent while more than one player plays; where it compares the player count for that, the count reads 1 (docs/split-screen.md); off as shipped, and off the audio path is the title's own. display.rival_marker (RECOMP_GFX_RIVAL_MARKER=farther, BO-241; overlay Display page): where the marker over a rival changes from its arrow to its race position, 35 checked every 30 steps as shipped; at farther the position below rival_near (60), the arrow past rival_far (75), checked every step (docs/rival-marker.md). game.race_clock (RECOMP_GAME_RACE_CLOCK=1, BO-159; overlay Graphics page): a one-player stage starts its simulation stepper in the mode that runs one step a frame whatever the time, and switches to its wall-clock mode only at the end of the first crash camera; the start stores the wall-clock mode instead, so a host below 60 keeps real time from the start (docs/race-clock.md); off as shipped.",
   "patches": [
     {
       "va": "0x00059BF7",
@@ -125,7 +125,7 @@
       "va": "0x001C17A0",
       "kind": "mark",
       "name": "fe_scene",
-      "note": "BO-222: sub_001C17A0, the root sync, the first thing sub_001C67D0 (a 2D scene's render) does: edi is the scene whose objects sub_001C6500 draws next. src/game/main.c keeps it for fe_dx / fe_dw (below). A mark changes nothing in the guest."
+      "note": "BO-222: sub_001C17A0, the root sync, the first thing sub_001C67D0 (a 2D scene's render) does: edi is the scene whose objects sub_001C6500 draws next. core/main.c keeps it for fe_dx / fe_dw (below). A mark changes nothing in the guest."
     },
     {
       "va": "0x001C17A3",
@@ -161,7 +161,7 @@
       "setting": "display.hud_fix",
       "when": "1",
       "expr": "loaded + fe_dx",
-      "note": "BO-222: sub_001C6500, a layer's object draw (called by sub_001C67D0 only): the drawn x (frame world x + world scale * object x, at esp+0x70 of the rectangle the render callback [ebx+0x44] gets), ebx the object. With the front-end root squeezed, the title's decoration that spans the frame (borders, checkered strips, header, the menu video, the loading picture, the highlight line, fades) would shrink to the middle 3/4; fe_dx (src/game/main.c) puts an object of the front-end scene whose box, in the title's own columns, reaches both edges back at those columns (the whole picture), and one at least 400 wide that reaches one edge with that edge there. 0 for every other object and scene. PS2 counterpart: the widths and x the PS2 fix writes per element (borders, checkerboards, loading background, replay bars); here one rule by geometry."
+      "note": "BO-222: sub_001C6500, a layer's object draw (called by sub_001C67D0 only): the drawn x (frame world x + world scale * object x, at esp+0x70 of the rectangle the render callback [ebx+0x44] gets), ebx the object. With the front-end root squeezed, the title's decoration that spans the frame (borders, checkered strips, header, the menu video, the loading picture, the highlight line, fades) would shrink to the middle 3/4; fe_dx (core/main.c) puts an object of the front-end scene whose box, in the title's own columns, reaches both edges back at those columns (the whole picture), and one at least 400 wide that reaches one edge with that edge there. 0 for every other object and scene. PS2 counterpart: the widths and x the PS2 fix writes per element (borders, checkerboards, loading background, replay bars); here one rule by geometry."
     },
     {
       "va": "0x001C65DD",
@@ -566,7 +566,7 @@
       "setting": "display.rival_marker",
       "when": "farther",
       "expr": "rival_near",
-      "note": "BO-241, sub_0018F060: the marker over a rival changes from its arrow (slot state 0) to its race position (1) when the point's view depth is below the distance loaded here, 35.0 (0x3B175C, shared with other code), as shipped. At 'farther' the distance is rival_near (src/game/main.c, 60): the position shows from farther away. docs/rival-marker.md."
+      "note": "BO-241, sub_0018F060: the marker over a rival changes from its arrow (slot state 0) to its race position (1) when the point's view depth is below the distance loaded here, 35.0 (0x3B175C, shared with other code), as shipped. At 'farther' the distance is rival_near (core/main.c, 60): the position shows from farther away. docs/rival-marker.md."
     },
     {
       "va": "0x0018F230",
@@ -671,7 +671,7 @@
       "va": "0x0001A000",
       "kind": "mark",
       "name": "uw_stage_setup",
-      "note": "sub_0001A000, a one-player stage's set-up (camera, HUD rectangle): display.ultrawide is sampled here (src/game/main.c). A mark changes nothing in the guest."
+      "note": "sub_0001A000, a one-player stage's set-up (camera, HUD rectangle): display.ultrawide is sampled here (core/main.c). A mark changes nothing in the guest."
     },
     {
       "va": "0x0001A930",
@@ -707,7 +707,7 @@
       "va": "0x001AE340",
       "kind": "mark",
       "name": "hdr_scene",
-      "note": "BO-110: sub_001AE340, a player's view of the world (3D, bloom, the frame pass sub_0003DA90, the radial blur): its start. With RECOMP_DEBUG=hdr the draws from here to hdr_ui keep light past 1.0 (src/game/main.c: the D3D push pointer goes to the toolkit's stream marks). A mark changes nothing in the guest."
+      "note": "BO-110: sub_001AE340, a player's view of the world (3D, bloom, the frame pass sub_0003DA90, the radial blur): its start. With RECOMP_DEBUG=hdr the draws from here to hdr_ui keep light past 1.0 (core/main.c: the D3D push pointer goes to the toolkit's stream marks). A mark changes nothing in the guest."
     },
     {
       "va": "0x001AE6E6",
@@ -807,7 +807,7 @@
       "va": "0x00059BDC",
       "kind": "mark",
       "name": "drive_log",
-      "note": "sub_00059BD0, the HUD speedometer's update, once a frame while a race's HUD runs, with the HUD object in ebx: BO3_DRIVE_LOG=<file> logs the speed it shows ([[ebx+0x2C]+0xBC], m/s, a magnitude) and the pad bytes the title read that frame (src/game/main.c; tools/headless/reverse_scene.sh asserts on it, BO-96). A mark changes nothing in the guest."
+      "note": "sub_00059BD0, the HUD speedometer's update, once a frame while a race's HUD runs, with the HUD object in ebx: BO3_DRIVE_LOG=<file> logs the speed it shows ([[ebx+0x2C]+0xBC], m/s, a magnitude) and the pad bytes the title read that frame (core/main.c; tools/headless/reverse_scene.sh asserts on it, BO-96). A mark changes nothing in the guest."
     },
     {
       "va": "0x001AE5AA",
@@ -931,43 +931,43 @@
       "va": "0x0018C511",
       "kind": "mark",
       "name": "ap_update",
-      "note": "sub_0018C510 (PS2 CB3PlayerCar::Update, vtable 0x3B11A0 slot 1), after `mov esi, ecx`: esi the player car. Before the update tests the car's 'AI controlled' byte (+0x27D8). RECOMP_DEBUG=autopilot=1 sets the byte here for player 1's car while it races, as the title does on the rolling start: the update takes the rivals' path (sub_00170820) and the physics the AI's (sub_00117870), not the pad's (src/game/autopilot.c, BO-130)."
+      "note": "sub_0018C510 (PS2 CB3PlayerCar::Update, vtable 0x3B11A0 slot 1), after `mov esi, ecx`: esi the player car. Before the update tests the car's 'AI controlled' byte (+0x27D8). RECOMP_DEBUG=autopilot=1 sets the byte here for player 1's car while it races, as the title does on the rolling start: the update takes the rivals' path (sub_00170820) and the physics the AI's (sub_00117870), not the pad's (core/autopilot.c, BO-130)."
     },
     {
       "va": "0x00085222",
       "kind": "mark",
       "name": "si_items",
-      "note": "sub_00085170 (the Settings page's set-up, Driver Details > Settings; page object 0x55ABC4): after the fourth item's label is stored, esi the page, eax the items (page + 8) about to be pushed for the list widget sub_000F0EA0. interface.menu_entry: the four items go to a block of our own with a fifth, TAKEDAWN SETTINGS, the count (+6) becomes 5 and eax the block (the page has no room: the next state's object is at 0x55ABEC). src/game/menuentry.c, BO-133."
+      "note": "sub_00085170 (the Settings page's set-up, Driver Details > Settings; page object 0x55ABC4): after the fourth item's label is stored, esi the page, eax the items (page + 8) about to be pushed for the list widget sub_000F0EA0. interface.menu_entry: the four items go to a block of our own with a fifth, TAKEDAWN SETTINGS, the count (+6) becomes 5 and eax the block (the page has no room: the next state's object is at 0x55ABEC). core/menuentry.c, BO-133."
     },
     {
       "va": "0x000853B4",
       "kind": "mark",
       "name": "si_select",
-      "note": "sub_000852B0 (the Settings page's input): after the call of sub_00017790 (A taken), al the answer. With the cursor (0x55ABC8) on the fifth line the answer becomes 0 and the overlay is asked to open, so the title never starts its exit for a line its next-page table (0x3EAF34) does not have. src/game/menuentry.c, BO-133."
+      "note": "sub_000852B0 (the Settings page's input): after the call of sub_00017790 (A taken), al the answer. With the cursor (0x55ABC8) on the fifth line the answer becomes 0 and the overlay is asked to open, so the title never starts its exit for a line its next-page table (0x3EAF34) does not have. core/menuentry.c, BO-133."
     },
     {
       "va": "0x0001BFC4",
       "kind": "mark",
       "name": "ua_eval",
-      "note": "sub_0001BE60 (PS2 CB3Profile::Evaluate), just before its ret: the title has rebuilt what is open (cars 0x44CFC8, events 0x44D01F, crash junctions 0x44D068, their counts, from the profile). The overlay's Unlock everything keeps that set and opens everything in its place, without writing the profile (src/game/unlockall.c, BO-131)."
+      "note": "sub_0001BE60 (PS2 CB3Profile::Evaluate), just before its ret: the title has rebuilt what is open (cars 0x44CFC8, events 0x44D01F, crash junctions 0x44D068, their counts, from the profile). The overlay's Unlock everything keeps that set and opens everything in its place, without writing the profile (core/unlockall.c, BO-131)."
     },
     {
       "va": "0x0008621A",
       "kind": "mark",
       "name": "pe_items",
-      "note": "sub_00085F70 (the race's pause menu, page object 0x5593E4, ebx): after the item count is stored (+6), on the usual layout (+0x60 = 0). interface.menu_entry: QUIT moves one down and TAKEDAWN SETTINGS takes its place, with an action code (+0x44) the title does not have; the page has room for seven items and codes. src/game/menuentry.c, BO-133."
+      "note": "sub_00085F70 (the race's pause menu, page object 0x5593E4, ebx): after the item count is stored (+6), on the usual layout (+0x60 = 0). interface.menu_entry: QUIT moves one down and TAKEDAWN SETTINGS takes its place, with an action code (+0x44) the title does not have; the page has room for seven items and codes. core/menuentry.c, BO-133."
     },
     {
       "va": "0x000863FC",
       "kind": "mark",
       "name": "pe_select",
-      "note": "sub_000863F0 (the pause menu's input; esi the page, edi the controller record): before it tests A (record + 0x4C). With the cursor on TAKEDAWN SETTINGS the overlay is asked to open; the title's switch on the action code then does nothing for it. src/game/menuentry.c, BO-133."
+      "note": "sub_000863F0 (the pause menu's input; esi the page, edi the controller record): before it tests A (record + 0x4C). With the cursor on TAKEDAWN SETTINGS the overlay is asked to open; the title's switch on the action code then does nothing for it. core/menuentry.c, BO-133."
     },
     {
       "va": "0x001B585F",
       "kind": "mark",
       "name": "ctl_pad",
-      "note": "sub_001B57E0, the pad manager's poll (once a frame, from sub_00021A50): the instruction after its XInputGetState call (sub_00363C86, the only one in the title), with ebx the port and esi the port's record + 4 (records of 0x20 at 0x4AE20C: state, handle, XINPUT_STATE). input.control_scheme = ps2 rewrites the XINPUT_GAMEPAD just read, while the title is driving (src/game/controls.c, BO-106); BO3_CTL_LOG logs it. The mark is after the inc, so ebx is the port + 1."
+      "note": "sub_001B57E0, the pad manager's poll (once a frame, from sub_00021A50): the instruction after its XInputGetState call (sub_00363C86, the only one in the title), with ebx the port and esi the port's record + 4 (records of 0x20 at 0x4AE20C: state, handle, XINPUT_STATE). input.control_scheme = ps2 rewrites the XINPUT_GAMEPAD just read, while the title is driving (core/controls.c, BO-106); BO3_CTL_LOG logs it. The mark is after the inc, so ebx is the port + 1."
     },
     {
       "va": "0x0001A17A",
@@ -1021,7 +1021,7 @@
       "va": "0x0006BF9B",
       "kind": "mark",
       "name": "tut_film",
-      "note": "sub_0006BC40 (the front-end state that plays a mode's training film, TrD_xxx / TrC_xxx), the `push 0` before its call of sub_00086F70 (film id [0x463C48], caption string [0x463C4C], ...): the byte argument that becomes the film page's 'skippable' flag (page 0x55CB88 + 0xC). The title pushes 0 here, so no button skips the film; the mark makes it 1, and A or START leave through the page's own exit (src/game/tutorial.c)."
+      "note": "sub_0006BC40 (the front-end state that plays a mode's training film, TrD_xxx / TrC_xxx), the `push 0` before its call of sub_00086F70 (film id [0x463C48], caption string [0x463C4C], ...): the byte argument that becomes the film page's 'skippable' flag (page 0x55CB88 + 0xC). The title pushes 0 here, so no button skips the film; the mark makes it 1, and A or START leave through the page's own exit (core/tutorial.c)."
     }
   ]
 }

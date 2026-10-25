@@ -1,4 +1,4 @@
-/* The title's side of the host mixer (src/game/mixer.c, BO-114). */
+/* The title's side of the host mixer (core/mixer.c, BO-114). */
 #include "mixer.h"
 
 #include <stdio.h>

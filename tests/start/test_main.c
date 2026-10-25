@@ -1,4 +1,4 @@
-/* Custom music at start: the decisions (src/game/soundtrack_start.h, BO-230). */
+/* Custom music at start: the decisions (core/soundtrack_start.h, BO-230). */
 #include <stdio.h>
 #include <string.h>
 

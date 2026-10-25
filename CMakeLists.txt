@@ -41,7 +41,7 @@ endif()
 # (bin/burnout3).
 option(BO3_RELEASE "Release build: named takedawn, stamped generated code required" OFF)
 if(BO3_RELEASE)
-    # What a packaged program does differently at run time (src/game/main.c:
+    # What a packaged program does differently at run time (core/main.c:
     # the display defaults of a first start on a desktop).
     add_compile_definitions(BO3_RELEASE_BUILD=1)
 endif()
@@ -110,23 +110,23 @@ endif()
 
 # The recompiled C of the release being built (regen.sh, BO3_GEN_DIR there too):
 # one folder per release lets the NTSC-U and the PAL program be built side by side.
-set(BO3_GEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/game/recomp/gen" CACHE PATH
+set(BO3_GEN_DIR "${CMAKE_CURRENT_SOURCE_DIR}/core/recomp/gen" CACHE PATH
     "The folder of the generated recomp_*.c and region_map.h")
 
 add_subdirectory(${XBOXRECOMP_DIR} ${CMAKE_BINARY_DIR}/xboxrecomp)
 
-add_subdirectory(src/game)
+add_subdirectory(core)
 
-# The PS2 driving layout's unit test (src/game/controls.h, BO-106).
+# The PS2 driving layout's unit test (core/controls.h, BO-106).
 if(NOT ANDROID)
     add_subdirectory(tests/controls)
-    # Which sound goes to which mixer bus (src/game/mixer.c, BO-114).
+    # Which sound goes to which mixer bus (core/mixer.c, BO-114).
     add_subdirectory(tests/mixer)
     # The GP effects image as wired for the APU's model (BO-119).
     add_subdirectory(tests/gp)
-    # Custom music at start: when the switch is due (src/game/soundtrack_start.h, BO-230).
+    # Custom music at start: when the switch is due (core/soundtrack_start.h, BO-230).
     add_subdirectory(tests/start)
-    # When a start-up failure may show a message box (src/game/fatal.c).
+    # When a start-up failure may show a message box (core/fatal.c).
     add_subdirectory(tests/fatal)
 endif()
 

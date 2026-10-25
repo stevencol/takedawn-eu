@@ -2,7 +2,7 @@
 folder already extracted from one -> the game data where the port expects it.
 
 The port reads "Burnout 3 Takedown/" (the disc's contents) from its working
-directory (src/game/main.c, BO3_GAME_DIR), so that is what ends up in
+directory (core/main.c, BO3_GAME_DIR), so that is what ends up in
 <root>/Game/. Only one build is supported; see supported.json.
 """
 

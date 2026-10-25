@@ -106,7 +106,7 @@ late frame. See Risks.
 
 It has to: the same slow motion, the same camera lengths, the same scores,
 only twice the pictures. The title's own counters say so, and they do not
-depend on how busy the host is: `BO3_PACE_LOG=<file>` (`src/game/main.c`)
+depend on how busy the host is: `BO3_PACE_LOG=<file>` (`core/main.c`)
 writes the pacing state at every flip, `tools/headless/crash60_scene.sh`
 drives the scenes and `tools/headless/pace_report.py` reads the logs.
 

@@ -9,7 +9,7 @@
 #   - a drive (accelerator held, slides, boost) with the same change every
 #     SCENERY_EVERY flips (default 150), for the draws and indices in motion.
 #
-# The changes go through BO3_FX_AT ("<flip> sdetail 0|1", src/game/main.c),
+# The changes go through BO3_FX_AT ("<flip> sdetail 0|1", core/main.c),
 # which sets the setting as the overlay's row does; the first one lists the
 # track's prop types in the log ("BO3_FX_AT: prop ..."). Frames compared:
 # N (original), N+4 (far), N+10 (original again); N-1..N+11 are dumped.

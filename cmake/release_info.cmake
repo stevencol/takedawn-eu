@@ -80,10 +80,10 @@ set(_inputs
     "${BO3_ROOT}/config/seed_functions.json"
     "${BO3_ROOT}/config/spin_waits.json"
     "${BO3_ROOT}/regen.sh"
-    "${BO3_ROOT}/src/game/recomp/recomp_manual.c"
+    "${BO3_ROOT}/core/recomp/recomp_manual.c"
     "${BO3_ROOT}/tools/region/region.py")
 set(_names config/patches.json config/seed_functions.json config/spin_waits.json regen.sh
-    src/game/recomp/recomp_manual.c tools/region/region.py)
+    core/recomp/recomp_manual.c tools/region/region.py)
 if(NOT BO3_BUILD STREQUAL "ntsc-u-retail")
     list(APPEND _inputs "${BO3_ROOT}/config/region/${BO3_BUILD}.json")
     list(APPEND _names "config/region/${BO3_BUILD}.json")

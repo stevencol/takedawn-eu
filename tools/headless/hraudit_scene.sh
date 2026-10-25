@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # hraudit_scene.sh <rundir> [KEY=VALUE...]: the BO-275 High refresh audit
-# (src/game/hraudit.c). Single Event > Race (Silver Lake), autopilot, High
+# (core/hraudit.c). Single Event > Race (Silver Lake), autopilot, High
 # refresh on at RECOMP_FLIP_PACING=host:<HZ> (default 120), then one audit
 # cycle per item of CYCLES (default below), each "<tag>:<blend|noblend>:<diff
 # samples>:<watch samples>[:<action>]", action one of race (as it comes),

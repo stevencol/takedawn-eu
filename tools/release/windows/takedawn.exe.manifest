@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!-- Embedded in the Windows executable (src/game/CMakeLists.txt), release or
+<!-- Embedded in the Windows executable (core/CMakeLists.txt), release or
      not. One thing only: the process's ANSI code page is UTF-8 (Windows 10
      1903 and later; older systems ignore it), so every path the program is
      given or finds is UTF-8 whatever it is named: arguments, environment

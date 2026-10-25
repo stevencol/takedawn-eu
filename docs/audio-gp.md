@@ -4,7 +4,7 @@ On the console the audio chip's Global Processor, a DSP, runs the effects
 image the game ships (`sound/DSP/B3XboxFx.bin`). It takes the 32 mixbins the
 voices were summed into and makes the six speaker feeds. The port does not
 run a DSP: the toolkit has a model of what this image does
-(`src/apu/apu_gp.c`), and `src/game/gp_image.c` tells it which effect sits
+(`src/apu/apu_gp.c`), and `core/gp_image.c` tells it which effect sits
 on which mixbin. This page is what that stage does and how it was checked.
 
 It is the same in 5.1 and in stereo; in stereo the six feeds are folded to

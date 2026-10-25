@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # pause_entry_scene.sh <rundir> [KEY=VALUE...]
 #
-# interface.menu_entry in the race's pause menu (BO-133, src/game/
+# interface.menu_entry in the race's pause menu (BO-133, core/
 # menuentry.c): RESUME, RESTART, AUDIO, CONTROLLERS, TAKEDAWN SETTINGS, QUIT.
 # Needs a window (WINDOW=1 is set here): without one there is no overlay and
 # the menu is the title's.

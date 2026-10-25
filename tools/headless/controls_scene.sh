@@ -6,7 +6,7 @@
 # and the results read the pad as always. A pad script stands in for a
 # controller (BO3_CTL_SCRIPTED=1; without it a scripted pad keeps the Xbox
 # layout whatever the setting), and the title's own state and what it read
-# are logged every frame (BO3_CTL_LOG, BO3_DRIVE_LOG; src/game/controls.c).
+# are logged every frame (BO3_CTL_LOG, BO3_DRIVE_LOG; core/controls.c).
 #
 #   SCHEME=ps2 (default) | xbox    the layout under test
 #   EVENT=race (default) | crash   Single Event > Race, or > Crash (Trailer

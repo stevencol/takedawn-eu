@@ -2,7 +2,7 @@
 
 How Burnout 3 gets from its XBE entry point to the "Press START" title screen
 on the shared [xboxrecomp](https://github.com/sp00nznet/xboxrecomp) runtime,
-with no hand-written game code. `src/game/main.c` brings up the hardware the
+with no hand-written game code. `core/main.c` brings up the hardware the
 XBE expects and jumps to 0x001D2807. Every screen below is drawn by the title's
 own recompiled D3D8LTCG through the runtime's NV2A pushbuffer executor.
 

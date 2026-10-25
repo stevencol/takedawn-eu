@@ -3,7 +3,7 @@
 #
 # The scenes the 60 fps crash camera switch is checked on (graphics.crash_60fps,
 # BO-111, docs/crash60.md), with the title's pacing state logged per flip
-# (BO3_PACE_LOG, src/game/main.c) into <rundir>/pace.txt. Run it once as
+# (BO3_PACE_LOG, core/main.c) into <rundir>/pace.txt. Run it once as
 # shipped and once with RECOMP_GFX_CRASH_60FPS=1 after the scene name;
 # tools/headless/pace_report.py <rundir>... compares the two.
 #

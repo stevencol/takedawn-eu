@@ -9,7 +9,7 @@ supported release (North America retail, `default.xbe` SHA-256
 `9f497acd82adb8edfb72cc31aeeb35010b45d32b13a3f1fc6540717ff24d13f9`, recorded
 in [`tools/install/supported.json`](../tools/install/supported.json)).
 
-The generated C (`src/game/recomp/gen/`), the build output and the disc files
+The generated C (`core/recomp/gen/`), the build output and the disc files
 are ignored by git. Never commit or share them.
 
 ## What you need
@@ -49,7 +49,7 @@ git -C xboxrecomp checkout takedawn-0.1.2-beta   # the toolkit of release 0.1.2-
 ## Translate and build
 
 ```sh
-XBOXRECOMP_DIR=../xboxrecomp ./regen.sh --disasm    # writes src/game/recomp/gen/
+XBOXRECOMP_DIR=../xboxrecomp ./regen.sh --disasm    # writes core/recomp/gen/
 cmake -S . -B build/mac -G Ninja -DCMAKE_BUILD_TYPE=Release -DXBOXRECOMP_DIR=../xboxrecomp
 cmake --build build/mac
 ```

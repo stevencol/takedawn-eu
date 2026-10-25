@@ -35,7 +35,7 @@ a machine usable while it builds.
 | `toolchain` | checks for everything below and says what is missing and how to get it | never (it is quick) |
 | `disc` | identifies the image or folder, refuses any `default.xbe` that is not the supported build, extracts or copies the files to `<root>/Game/Burnout 3 Takedown/` | the installed `default.xbe` hashes to the supported build and the stamp says it was installed |
 | `icon` | `$$XTIMAGE` of that XBE to PNG, `.icns`, `.ico` | icons exist for this XBE hash |
-| `regen` | `regen.sh` (xbe_parser, disasm, func_id, abi_analysis, recomp) into `src/game/recomp/gen/` | generated C exists and the stamp (XBE hash + the toolkit's recompiler sources + `regen.sh` + `config/*.json` + `recomp_manual.c`) is unchanged |
+| `regen` | `regen.sh` (xbe_parser, disasm, func_id, abi_analysis, recomp) into `core/recomp/gen/` | generated C exists and the stamp (XBE hash + the toolkit's recompiler sources + `regen.sh` + `config/*.json` + `recomp_manual.c`) is unchanged |
 | `build` | CMake + Ninja, Release | Ninja has nothing to do |
 | `package` | the `.app` | binary, icon and root unchanged |
 
@@ -85,7 +85,7 @@ Failure codes: `no-source`, `source-unreadable`, `not-xbox-image`,
 process (SIGINT and SIGTERM are answered with `cancelled`) or create
 `<dest>/install.cancel`.
 
-**Where the game looks for its data** (`src/game/install.h`), first match wins:
+**Where the game looks for its data** (`core/install.h`), first match wins:
 
 1. a `default.xbe` named on the command line;
 2. `--data <dir>`;
@@ -120,7 +120,7 @@ in place).
 A start by a person (not `--no-setup`, `--headless`, `RECOMP_HEADLESS`,
 `TAKEDAWN_NO_SETUP`; on Linux, with a display) that ends here and has no setup
 program to hand over to shows a message box with the same text and the
-`--install` line (`src/game/fatal.c`). The same box (`bo3_fatal`) reports the
+`--install` line (`core/fatal.c`). The same box (`bo3_fatal`) reports the
 other start-up failures: the game's `default.xbe` cannot be read, and the
 memory the game needs cannot be reserved; it says what failed, what to do and
 where the log is (`run.log` in the save folder's `logs`, `takedawn.log` on
@@ -192,7 +192,7 @@ anywhere else. Nothing moves the files: to move an install, move its folder
 and pick it with Change....
 
 **How the game opens it.** A person who starts the game without a whole install
-gets the window instead of a silent exit: `bo3_data_enter` (`src/game/install.c`)
+gets the window instead of a silent exit: `bo3_data_enter` (`core/install.c`)
 looks for `takedawn-setup` in the executable's own folder (`TAKEDAWN_SETUP`
 names another) and becomes it (`execv`, so a launcher keeps one process to
 watch) with `--program <the game> [--dest <root>]`. Not with `--no-setup`,
@@ -322,7 +322,7 @@ Burnout 3: Takedown, NTSC-U (North America) retail, title id 0x4541005B,
 `default.xbe` 4,308,992 bytes,
 `sha256 9f497acd82adb8edfb72cc31aeeb35010b45d32b13a3f1fc6540717ff24d13f9`.
 The recompiler's seeds, the spin-wait list and the entry point (0x001D2807) in
-`src/game/main.c` are addresses in this exact file, so a PAL or Japanese disc
+`core/main.c` are addresses in this exact file, so a PAL or Japanese disc
 (or a patched XBE) is refused with its title, region and hash, not tried. To
 support another build: add an entry and verify the regen against it.
 
@@ -648,7 +648,7 @@ afterwards; the tools folder was left for reuse.
 
 A front end may copy a `git archive` of the game tree and the toolkit to
 `<root>/src` and pass `--work` / `--toolkit`; the driver builds in that tree
-(`build/` and `src/game/recomp/gen/` inside it) and needs nothing from the repo it was
+(`build/` and `core/recomp/gen/` inside it) and needs nothing from the repo it was
 started in. Checked: macOS with spaces in the work folder, the root and the app
 folder (whole pipeline plus a headless run); Windows with spaces and a 138-character
 work path (whole pipeline: regen, build, package; longer paths risk Windows' 260-character

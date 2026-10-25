@@ -53,7 +53,7 @@ else
     REPO="$(cd "$HERE/../.." && pwd)"
     if [ -f "$HERE/local.env" ]; then set -a; . "$HERE/local.env"; set +a; fi
     TOOLKIT="$(cd "${XBOXRECOMP_DIR:-$REPO/../xboxrecomp}" && pwd)"
-    GEN="${TAKEDAWN_GEN:-$REPO/src/game/recomp/gen}"
+    GEN="${TAKEDAWN_GEN:-$REPO/core/recomp/gen}"
     VERSION="$(sed -n 1p "$REPO/VERSION" | tr -d '\r ')"
     DIST="${TAKEDAWN_DIST:-$REPO/dist/$VERSION}"
     say() { printf '==> %s\n' "$*"; }
@@ -75,7 +75,7 @@ ENVF="${TAKEDAWN_ANDROID_ENV:-}"
 ls "$GEN"/recomp_0*.c >/dev/null 2>&1 || die "no generated code in $GEN"
 
 say "copying the sources and the generated code to the build machine"
-ssh "$H" "mkdir -p '$D/src/takedawn/src/game/recomp/gen' '$D/src/xboxrecomp' '$D/licenses'"
+ssh "$H" "mkdir -p '$D/src/takedawn/core/recomp/gen' '$D/src/xboxrecomp' '$D/licenses'"
 if [ "$STAMPED" = 1 ]; then
     LICSTAGE="$(mktemp -d)"
     copy_licenses "$LICSTAGE/licenses"
@@ -89,7 +89,7 @@ fi
 # nothing else is copied; the generated code has its own copy below.
 git -C "$REPO" ls-files -z | rsync -a --from0 --files-from=- "$REPO/" "$H:$D/src/takedawn/"
 git -C "$TOOLKIT" ls-files -z | rsync -a --from0 --files-from=- "$TOOLKIT/" "$H:$D/src/xboxrecomp/"
-rsync -a --delete "$GEN/" "$H:$D/src/takedawn/src/game/recomp/gen/"
+rsync -a --delete "$GEN/" "$H:$D/src/takedawn/core/recomp/gen/"
 # The copies have no git: say which commits they are (the toolkit's
 # cmake/build_id.cmake reads BUILD_COMMIT), so the program's version line
 # names them as on every other platform.
@@ -115,14 +115,14 @@ grep -a -m1 "regen key" ../../build-apk.log || true
 grep -a "versionCode\|with Mesa\|licence files" ../../build-apk.log || true
 TDIR=turnip-a725; [ "\${BO3_ANDROID_TURNIP:-1}" = mesa ] && TDIR=turnip
 cat "\${BO3_ANDROID_DEPS:-\$HOME/.cache/bo3-android-deps}/\$TDIR/SOURCE.txt" | sed 's/^/   turnip: /'
-t=\$(mktemp); ( cd src/game/recomp/gen && for f in \$(ls | grep '^recomp_' | LC_ALL=C sort); do printf '%s  %s\n' "\$(sha256sum "\$f" | cut -d' ' -f1)" "\$f"; done ) > "\$t"
+t=\$(mktemp); ( cd core/recomp/gen && for f in \$(ls | grep '^recomp_' | LC_ALL=C sort); do printf '%s  %s\n' "\$(sha256sum "\$f" | cut -d' ' -f1)" "\$f"; done ) > "\$t"
 echo "GENTREE \$(sha256sum "\$t" | cut -d' ' -f1)"; rm -f "\$t"
 REMOTE
 mkdir -p "$DIST"
 log="$(mktemp)"
 ssh "$H" "cat '$D/build-apk.log'" > "$log"
 rkey="$(sed -n 's/.*regen key \([0-9a-f]*\).*/\1/p' "$log" | head -1)"
-rtree="$(ssh "$H" "cd '$D/src/takedawn/src/game/recomp/gen' && t=\$(mktemp) && for f in \$(ls | grep '^recomp_' | LC_ALL=C sort); do printf '%s  %s\n' \"\$(sha256sum \"\$f\" | cut -d' ' -f1)\" \"\$f\"; done > \$t && sha256sum \$t | cut -d' ' -f1; rm -f \$t")"
+rtree="$(ssh "$H" "cd '$D/src/takedawn/core/recomp/gen' && t=\$(mktemp) && for f in \$(ls | grep '^recomp_' | LC_ALL=C sort); do printf '%s  %s\n' \"\$(sha256sum \"\$f\" | cut -d' ' -f1)\" \"\$f\"; done > \$t && sha256sum \$t | cut -d' ' -f1; rm -f \$t")"
 rm -f "$log"
 [ "$rtree" = "$GEN_TREE" ] || die "the generated code on the build machine ($rtree) is not this checkout's ($GEN_TREE)"
 if [ "$STAMPED" = 1 ]; then

@@ -279,7 +279,7 @@ each car's `.hwd` and `.lwd`: 1575 waves in 174 files). It starts its voices
 from one update tick, so the code that starts a voice says nothing about
 the sound; the wave does. When the mixer is turned on, the port reads the
 dictionaries of **your own disc** once, on a thread (no list of the game's
-data is shipped; the rules in `src/game/mixer.c` only say which file and
+data is shipped; the rules in `core/mixer.c` only say which file and
 name go to which bus), keeps each wave's first 16 bytes and 16 more at
 +0x400 / +0x440, and recognises a voice by the bytes of its buffer when it
 starts. Streams have no wave; the guest return addresses on the stack at

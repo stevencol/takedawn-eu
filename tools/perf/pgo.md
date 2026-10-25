@@ -9,7 +9,7 @@ taken on any arm64 phone serves every phone.
        BUILD_DIR=$PWD/build-android-pgogen \
          tools/android/build-apk.sh -DBO3_RELEASE=ON -DBO3_PGO_GENERATE=ON
 
-   It writes `<the app's files>/pgo.profraw` every 30 s (src/game/main.c).
+   It writes `<the app's files>/pgo.profraw` every 30 s (core/main.c).
 
 2. Install it and play, or let the AI race (a few minutes; menus, a race,
    a crash):
@@ -19,7 +19,7 @@ taken on any arm64 phone serves every phone.
 3. Pull and merge (the NDK's llvm-profdata, the same clang version as the
    build):
 
-       adb pull /sdcard/Android/data/io.github.xenophobentx.takedawn/files/pgo.profraw
+       adb pull /sdcard/Android/data/com.stevencol.takedawn/files/pgo.profraw
        $NDK/toolchains/llvm/prebuilt/<host>/bin/llvm-profdata merge -o tools/perf/takedawn.profdata pgo.profraw
 
 4. The optimised build:

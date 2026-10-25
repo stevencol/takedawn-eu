@@ -16,7 +16,7 @@
 #   b <current_now> <voltage_now>
 #   th0|th1 <thread name> <utime+stime>
 SECS=${1:-60}
-PKG=${2:-io.github.xenophobentx.takedawn}
+PKG=${2:-com.stevencol.takedawn}
 pid=$(pidof "$PKG")
 [ -n "$pid" ] || { echo "no process $PKG" >&2; exit 1; }
 echo "hz $(getconf CLK_TCK 2>/dev/null || echo 100)"

@@ -2,7 +2,7 @@
  * Burnout 3: Takedown (Xbox) - Recompiled Game Entry Point
  *
  * Hosts the recompiled default.xbe on the shared xboxrecomp runtime
- * (../xboxrecomp), the same way hl2/src/game/main.c does. Nothing here draws,
+ * (../xboxrecomp), the same way hl2/core/main.c does. Nothing here draws,
  * drives a menu or decides game state: the title's own boot sequence runs from
  * its real entry point, and anything the host does is limited to bringing up
  * the hardware the XBE expects to find.
@@ -1422,7 +1422,7 @@ static LONG CALLBACK veh_handler(PEXCEPTION_POINTERS ep)
 /* Every thread's host RIP and, for a busy one, its stack, naming the
  * generated function each is in. A spin shows up as the same symbol with the
  * indirect-call count flat, which is what separates a hang from something
- * merely slow. Ported from hl2/src/game/main.c. The toolkit's hang watchdog
+ * merely slow. Ported from hl2/core/main.c. The toolkit's hang watchdog
  * (RECOMP_HANG_WATCHDOG, xbox_crash.h) calls it into its report; without
  * that, RECOMP_HANG_WATCHDOG=<seconds> prints it every N seconds. */
 extern volatile uint64_t g_icall_count;
@@ -1834,7 +1834,7 @@ static void host_fatal(const char *what, const char *todo)
 {
 #if defined(__ANDROID__)
     const char *log = "takedawn.log in the app's files folder"
-                      " (Android/data/io.github.xenophobentx.takedawn/files)";
+                      " (Android/data/com.stevencol.takedawn/files)";
 #else
     char log[1200];
 
@@ -3961,7 +3961,7 @@ int main(int argc, char **argv)
  * Returns the archive's path, or "!" and the reason. */
 #include <jni.h>
 JNIEXPORT jstring JNICALL
-Java_io_github_xenophobentx_takedawn_ReportActivity_nativeBugReport(JNIEnv *env, jclass cls,
+Java_com_stevencol_takedawn_ReportActivity_nativeBugReport(JNIEnv *env, jclass cls,
                                                                     jstring note)
 {
     static char arg0[] = "burnout3", arg1[] = "--bug-report";

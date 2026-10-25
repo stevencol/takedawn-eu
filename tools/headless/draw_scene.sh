@@ -13,7 +13,7 @@
 #     a frame every DRAW_STUDY flips (default 20) for looking at what pops
 #     in at the original setting.
 #
-# The changes go through BO3_FX_AT ("<flip> vdetail 0|1|2", src/game/main.c),
+# The changes go through BO3_FX_AT ("<flip> vdetail 0|1|2", core/main.c),
 # which sets the setting as the overlay's row does. A change reaches the
 # picture one or two frames on, so the frames compared are N (original), N+4
 # (far), N+10 (farthest) and N+16 (original again); frames N-1..N+17 are

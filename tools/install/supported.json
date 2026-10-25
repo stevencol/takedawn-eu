@@ -1,5 +1,5 @@
 {
-  "_comment": "The one place the installer learns which discs it supports. The recompiler's seeds (config/seed_functions.json), the spin-wait list, the patches and the addresses in src/game are written for the NTSC-U default.xbe; another build is supported only through its address table, config/region/<id>.json (tools/region/region.py), and its disc manifest, config/disc/<id>.manifest. Any other executable (another region, a patched or trimmed XBE) must be refused, not tried.",
+  "_comment": "The one place the installer learns which discs it supports. The recompiler's seeds (config/seed_functions.json), the spin-wait list, the patches and the addresses in core are written for the NTSC-U default.xbe; another build is supported only through its address table, config/region/<id>.json (tools/region/region.py), and its disc manifest, config/disc/<id>.manifest. Any other executable (another region, a patched or trimmed XBE) must be refused, not tried.",
   "builds": [
     {
       "id": "ntsc-u-retail",

@@ -2,7 +2,7 @@
 # in-container.sh: the part of tools/release/build-linux.sh that runs inside
 # the Steam Runtime sniper SDK container.
 #
-#   /src/game, /src/toolkit   the two source trees (with BUILD_COMMIT files)
+#   /core, /src/toolkit   the two source trees (with BUILD_COMMIT files)
 #   /stage                    AppRun, the desktop file, icons and licences,
 #                             prepared by build-linux.sh
 #   /qt                       the qt.io kit for the setup window (optional)
@@ -22,7 +22,7 @@ JOBS="${JOBS:-4}"
 B=/out/build
 A=/out/AppDir
 
-cmake -S /src/game -B "$B" -G Ninja -DCMAKE_BUILD_TYPE=Release -DBO3_RELEASE=ON \
+cmake -S /core -B "$B" -G Ninja -DCMAKE_BUILD_TYPE=Release -DBO3_RELEASE=ON \
     -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
     -DXBOXRECOMP_DIR=/src/toolkit -DBO3_BIN_DIR="$B/bin" \
     -DSDL2_DIR=/sdl/lib/cmake/SDL2 -DSDL3_DIR=/sdl/lib/cmake/SDL3 \
@@ -107,7 +107,7 @@ if [ -d /qt/lib ]; then
     S=/out/setup
     # g++ 10, as Qt itself was built with (the image's clang 11 crashes on
     # Qt 6.10's headers).
-    cmake -S /src/game/tools/install/gui -B "$S" -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    cmake -S /core/tools/install/gui -B "$S" -G Ninja -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_COMPILER=g++-10 -DCMAKE_PREFIX_PATH=/qt -DTAKEDAWN_ICON_DIR=/stage/icons \
         -DTAKEDAWN_SETUP_GAMEPAD=ON -DSDL2_DIR=/sdl/lib/cmake/SDL2 -DSDL3_DIR=/sdl/lib/cmake/SDL3 \
         -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON '-DCMAKE_INSTALL_RPATH=$ORIGIN/../lib' > /out/setup-configure.log 2>&1 \

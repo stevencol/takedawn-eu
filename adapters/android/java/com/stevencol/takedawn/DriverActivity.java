@@ -1,4 +1,4 @@
-package io.github.xenophobentx.takedawn;
+package com.stevencol.takedawn;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -29,7 +29,7 @@ public class DriverActivity extends Activity {
     private static final int PICK = 1;
     /** From the start-up warning (GameActivity.pickDriverPackage): the file
      *  picker at once, and the game started again on the package picked. */
-    static final String EXTRA_PICK = "io.github.xenophobentx.takedawn.PICK";
+    static final String EXTRA_PICK = "com.stevencol.takedawn.PICK";
     private LinearLayout box;
     private String message;
     private boolean restartAfterPick;

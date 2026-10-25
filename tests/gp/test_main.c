@@ -1,5 +1,5 @@
 /* bo3_gp: sound/DSP/B3XboxFx.bin as wired for the APU's GP model
- * (src/game/gp_image.c, BO-119), against the routing measured on the GP
+ * (core/gp_image.c, BO-119), against the routing measured on the GP
  * stage with the title's race state:
  *
  *   bin  0..5   their own speaker, +1          6..9   FL FR SL SR, +1
